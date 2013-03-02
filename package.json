@@ -5,11 +5,15 @@
 	"description": "Node middleware for Photo Management and Image Uploading, ExpressJS Compatible.",
 	"engines": { "node": ">= 0.0.8" },
 	"dependencies": {
-		"express": "3.x"	
+		"express": "3.x",
+		"imagemagick": "*"
 	},
-	"main": "./lib/picsee",
+	"main": "./lib/index.js",
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/dlochrie/picsee.git"
+	},
+	"scripts": {
+		"test": "node test"
 	}
 }
