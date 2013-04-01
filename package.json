@@ -6,9 +6,9 @@
 	"engines": { "node": ">= 0.0.8" },
 	"dependencies": {
 		"express": "3.x",
-		"imagemagick": "*"
+		"node-gd": "*"
 	},
-	"main": "./lib/index.js",
+	"main": "./index.js",
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/dlochrie/picsee.git"
