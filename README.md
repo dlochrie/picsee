@@ -18,6 +18,10 @@ in a gallery.
 
     npm install picsee
 
+### Mac Note
+	
+	I'm not quite sure how to set up the `GD` libary on Mac, but there are some tutorials for doing so. This module requires (GD)[http://www.boutell.com/gd/] and the NodeJS module for it.
+
 ###App Setup:
 
     var picsee = require('picsee');
