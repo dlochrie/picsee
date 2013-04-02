@@ -1,9 +1,12 @@
 var fs = require('fs'),
 	path = require('path'),
 	url = require("url"),
-	gd = require('node-gd'), // WE NEED THIS IN SIGNATURE
-	mime = require('mime') // WE NEED THIS IN SIGNATURE
+	gd = require('node-gd'), 
+	mime = require('mime');
 
+/**
+ * TODO: Verify this is a complete list
+ */
 var mimes_allowed = [
 	"image/gif",
 	"image/jpeg",
@@ -11,7 +14,7 @@ var mimes_allowed = [
 ];
 
 /**
- * Create a new Picsee Object
+ * Create a new Picsee Object 
  */
 function Picsee () {
 	if (!(this instanceof Picsee)) {
@@ -19,12 +22,23 @@ function Picsee () {
 	}
 }
 
+/**
+ * @param {Object} options Object containing application settungs
+ * @property {String} _sandboxDir Safe location where file is validated
+ * @property {String} _processDir Location of pre-processed file
+ * @property {String} _uploadDir Final destination of uploaded file
+ * @property {Array} _inputFields Named inputs that images will be uploaded from
+ */
 Picsee.prototype.initialize = function (options) {
+	var self = this;
   options = options || {};
-	this._sandboxDir = options.sandboxDir || false;
-	this._processDir = options.processDir || false;
-	this._uploadDir = options.uploadDir || false;
-	return this;
+  self._docRoot = options._docRoot || false;
+	self._sandboxDir = options.sandboxDir || false;
+	self._processDir = options.processDir || false;
+	self._uploadDir = options.uploadDir || false;
+	self._namingConvention = options.namingConvention || [];
+	self._inputFields = options.inputFields || [];
+	return self;
 }
 
 /**
@@ -34,7 +48,8 @@ Picsee.prototype.initialize = function (options) {
  * dst_image is the destination image, src_image is the source image identifier.
  * 
  * imagecopyresampled() copies a rectangular portion of one image to another image,
- * smoothly interpolating pixel values so that, in particular, reducing the size of an image still retains a great deal of clarity.
+ * smoothly interpolating pixel values so that, in particular, reducing the size of 
+ * an image still retains a great deal of clarity.
  */ 
 
 /**
@@ -42,12 +57,33 @@ Picsee.prototype.initialize = function (options) {
  * See: https://github.com/taggon/node-gd/wiki/Usage
  */ 
 
-Picsee.prototype.upload = function (req, res) {
+Picsee.prototype.upload = function (req, res, next) {
+	var self = this;
+	console.log('self', self);
+
+	// Check to see if file is an acceptable image
+	var allowed = self._inputFields;
+
+	for (var file in req.files) {
+		if (allowed.indexOf(file) !== -1) {
+			console.log(file, 'is allowed');
+		}
+	}
+
+	next();
+
+/*
+
+	var name = renameImage(self._namingConvention, name);	
+	
+	// Change this to use the array of input fields
 	var photo = req.files.profPhoto.path;
+
+	// Update `Naming Conventions` here...
 	var date = new Date().getTime();
 	var ext = getFileExt(req.files.profPhoto.type);
-	var filePath = sandbox +  uuid + '-' + date + '.' + ext;
-	var destPath = root + filePath;
+	var filePath = self._sandboxDir +  uuid + '-' + date + '.' + ext;
+	var destPath = self._docRoot + filePath;
 	var urlPath = req.protocol + "://" + req.get('host') + "/" + filePath;
 	
 	fs.readFile(photo, function (err, data) {
@@ -65,6 +101,9 @@ Picsee.prototype.upload = function (req, res) {
 			}
 		});
 	});
+
+*/
+
 }
 
 Picsee.prototype.crop = function (req, res) {
@@ -174,6 +213,24 @@ function rescaleFromHeight(h, sw, sh) {
 	sh = parseInt(sh);
 	if (h && sw && sh) return Math.round((sh * h) / sw);
 	return false;
+}
+
+/** 
+ * @description  Generates a name based on naming options 
+ * @param {String} convention Option describing how to rename this image.
+ * @param {String} name Optional Name (if passed).
+ */
+function renameImage(convention, name) {
+	switch (convention) {
+		case 'application':
+			return name || {};
+			break;
+		case 'date':
+			return new Date().getTime();
+			break;
+		default:
+			return 
+	}	
 }
 
 exports = module.exports = new Picsee();
