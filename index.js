@@ -32,11 +32,10 @@ function Picsee () {
 Picsee.prototype.initialize = function (options) {
 	var self = this;
   options = options || {};
-  self._docRoot = options._docRoot || false;
 	self._sandboxDir = options.sandboxDir || false;
 	self._processDir = options.processDir || false;
 	self._uploadDir = options.uploadDir || false;
-	self._namingConvention = options.namingConvention || [];
+	self._namingConvention = options.namingConvention || false;
 	self._inputFields = options.inputFields || [];
 	return self;
 }
@@ -57,20 +56,20 @@ Picsee.prototype.initialize = function (options) {
  * See: https://github.com/taggon/node-gd/wiki/Usage
  */ 
 
-Picsee.prototype.upload = function (req, res, next) {
+Picsee.prototype.upload = function (req, res, cb) {
 	var self = this;
-	console.log('self', self);
 
 	// Check to see if file is an acceptable image
 	var allowed = self._inputFields;
 
 	for (var file in req.files) {
 		if (allowed.indexOf(file) !== -1) {
-			console.log(file, 'is allowed');
+			//console.log(req.files[file], 'is allowed');
+			self.process(req.files[file], function(msg) {
+				cb({ title: 'Bad News', msg: msg });
+			});
 		}
 	}
-
-	next();
 
 /*
 
@@ -114,8 +113,54 @@ Picsee.prototype.crop = function (req, res) {
 	console.log(url.parse(req.body.image));
 }
 
-function getFileExt(type) {
-	var parts = type.split("/");
+Picsee.prototype.process = function (image, cb) {
+	// TODO: Handle errors and exceptions for dflt vars....
+	var self = this,
+		oldName = image.name,
+		ext = getFileExt(oldName),
+		tmpPath = image.path,
+		destPath = self._sandboxDir + self.renameImage(oldName, ext, null);
+
+	fs.readFile(image.path, function (err, data) {
+		if (err) res.redirect('index');
+		fs.writeFile(destPath, data, function (err) {
+			if (err) console.log('error!', err);
+			var mime = getMime(destPath);
+			if (mimes_allowed.indexOf(mime) !== -1) {
+				var w = 400; // Um, NOT A CONSTANT!!!!!
+				resizeTo(destPath, ext, w);
+				cb('Uploaded..');
+			} else {
+				var msg = 'Are you crazy???? You can\'t upload that kind of file <em>("' + mime +'")</em> !!!!';
+				return cb(msg);
+			}
+		});
+	});
+}
+
+/** 
+ * @description  Generates a name based on naming options 
+ * @param {Object} image Image Object.
+ * @param {String} name Optional Name (if passed).
+ */
+Picsee.prototype.renameImage = function (oldName, ext, newName) {
+	var self = this,
+		convention = self._namingConvention;
+	
+	switch (convention) {
+		case 'application':
+			return name + '.' + ext;
+			break;
+		case 'date':
+			return String(new Date().getTime()) + '.' + ext;
+			break;
+		default:
+			return String(new Date().getTime()) + '.' + ext;
+	}	
+}
+
+function getFileExt(file) {
+	var parts = file.split(".");
 	return parts[1];	
 }
 
@@ -126,7 +171,7 @@ function getMime(img) {
 function resizeTo(img, ext, w) {
 	switch (ext) {
 		case "jpeg":
-			resizeJpeg(img, w);
+			resizeJpeg(img, w, false);
 			break;
 		case "gif":
 			resizeGif(img, w);
@@ -158,8 +203,14 @@ function resizeJpeg(img, w, h) {
 	w = (w) ? w : false;
 	h = (h) ? h : false;
 	var src = gd.createFromJpeg(img);
-	if (w) rescaleFromWidth(w, src.width ,src.height);
-	if (h) rescaleFromHeight(h, src.width ,src.height);
+
+	if (w) h = rescaleFromWidth(w, src.width, src.height);
+	if (h) w = rescaleFromHeight(h, src.width, src.height);
+	
+	console.log('w', w);
+	console.log('h', h);
+	console.log('src', src);
+
 	var target = gd.createTrueColor(w, h);
 	src.copyResampled(target, 0, 0, 0, 0, w, h, src.width,src.height);
 	target.saveJpeg(img, 80);
@@ -188,7 +239,7 @@ function resizePng(img, w, h) {
 }
 
 /**
- * @description Calculates new Dimensions based on Desired Width
+ * @description Calculates new Height based on Desired Width
  * @param w Desired Width
  * @param sw Source Width
  * @param sh Source Height
@@ -202,7 +253,7 @@ function rescaleFromWidth(w, sw, sh) {
 }
 
 /**
- * @description Calculates new Dimensions based on Desired Width
+ * @description Calculates new Width based on Desired Height
  * @param h Desired Height
  * @param sw Source Width
  * @param sh Source Height
@@ -213,24 +264,6 @@ function rescaleFromHeight(h, sw, sh) {
 	sh = parseInt(sh);
 	if (h && sw && sh) return Math.round((sh * h) / sw);
 	return false;
-}
-
-/** 
- * @description  Generates a name based on naming options 
- * @param {String} convention Option describing how to rename this image.
- * @param {String} name Optional Name (if passed).
- */
-function renameImage(convention, name) {
-	switch (convention) {
-		case 'application':
-			return name || {};
-			break;
-		case 'date':
-			return new Date().getTime();
-			break;
-		default:
-			return 
-	}	
 }
 
 exports = module.exports = new Picsee();
