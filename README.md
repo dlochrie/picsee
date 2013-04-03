@@ -18,22 +18,31 @@ in a gallery.
 
     npm install picsee
 
-### Mac Note  
 
+### Prerequisite: GD  
+
+You will need to have GD installed so that `node-gd` (a dependency) can compile. Please have GD installed first.
+
+#### GD on Mac  
 I'm not quite sure how to set up the `GD` libary on Mac, but there are some tutorials for doing so. This module requires [GD](http://www.boutell.com/gd/) and the [NodeJS module](https://github.com/taggon/node-gd) for it.
 
-###App Setup:
+If anyone knows how to install GD on a mac, let me know.
+
+#### Ubuntu
+    apt-get install libgd2-xpm-dev
+
+###App Setup: Under Construction
 
     var picsee = require('picsee');
     app.configure(function(){
-      app.use(picsee.initialize());
+      app.use(picsee.initialize(options));
       // Call picsee before you set your routes
       app.use(app.router);
     });
 
-###Create Your Conf
+###Create Your Conf: Under Construction
 
-In your conf, setup the sizes that are accecptable, with an array of [Width, Height]...  
+In your conf, setup the sizes that are acceptable, with an array of [Width, Height]...  
 
 **TODO** add more about Conf here.
 
