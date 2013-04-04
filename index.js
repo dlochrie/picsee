@@ -6,6 +6,7 @@ var fs = require('fs'),
 
 /**
  * TODO: Verify this is a complete list
+ * Should be CONST: var MIMES_ALLOWED
  */
 var mimes_allowed = [
 	"image/gif",
@@ -60,49 +61,19 @@ Picsee.prototype.upload = function (req, res, cb) {
 	var self = this;
 
 	// Check to see if file is an acceptable image
-	var allowed = self._inputFields;
+	var allowed = self._inputFields; // TODO: Better var name???
 
+	/**
+	 * Loop through each photo input, and process each
+	 * TODO: Work on CB and asynchronicity
+	 */
 	for (var file in req.files) {
 		if (allowed.indexOf(file) !== -1) {
-			//console.log(req.files[file], 'is allowed');
 			self.process(req.files[file], function(msg) {
 				cb({ title: 'Bad News', msg: msg });
 			});
 		}
 	}
-
-/*
-
-	var name = renameImage(self._namingConvention, name);	
-	
-	// Change this to use the array of input fields
-	var photo = req.files.profPhoto.path;
-
-	// Update `Naming Conventions` here...
-	var date = new Date().getTime();
-	var ext = getFileExt(req.files.profPhoto.type);
-	var filePath = self._sandboxDir +  uuid + '-' + date + '.' + ext;
-	var destPath = self._docRoot + filePath;
-	var urlPath = req.protocol + "://" + req.get('host') + "/" + filePath;
-	
-	fs.readFile(photo, function (err, data) {
-		if (err) res.redirect('index');
-		fs.writeFile(destPath, data, function (err) {
-			if (err) res.render('form', { msg: 'There was an error uploading your file:' + err });
-			var mime = getMime(destPath);
-			if (mimes_allowed.indexOf(mime) !== -1) {
-				var w = 400;
-				resizeTo(destPath, ext, w);
-				res.render('uploaded', { title: 'Express', sandbox: urlPath });
-			} else {
-				var msg = 'Are you crazy???? You can\'t upload that kind of file <em>("' + mime +'")</em> !!!!';
-				res.render('form', { msg: msg });
-			}
-		});
-	});
-
-*/
-
 }
 
 Picsee.prototype.crop = function (req, res) {
@@ -119,16 +90,17 @@ Picsee.prototype.process = function (image, cb) {
 		oldName = image.name,
 		ext = getFileExt(oldName),
 		tmpPath = image.path,
-		destPath = self._sandboxDir + self.renameImage(oldName, ext, null);
+		sandboxPath = self._sandboxDir + self.renameImage(oldName, ext, null),
+		processPath = self._processDir + self.renameImage(oldName, ext, null);
 
 	fs.readFile(image.path, function (err, data) {
 		if (err) res.redirect('index');
-		fs.writeFile(destPath, data, function (err) {
+		fs.writeFile(sandboxPath, data, function (err) {
 			if (err) console.log('error!', err);
-			var mime = getMime(destPath);
+			var mime = getMime(sandboxPath);
 			if (mimes_allowed.indexOf(mime) !== -1) {
 				var w = 400; // Um, NOT A CONSTANT!!!!!
-				resizeTo(destPath, ext, w);
+				resizeTo(sandboxPath, processPath, ext, w, 0);
 				cb('Uploaded..');
 			} else {
 				var msg = 'Are you crazy???? You can\'t upload that kind of file <em>("' + mime +'")</em> !!!!';
@@ -145,17 +117,16 @@ Picsee.prototype.process = function (image, cb) {
  */
 Picsee.prototype.renameImage = function (oldName, ext, newName) {
 	var self = this,
-		convention = self._namingConvention;
-	
+		convention = self._namingConvention;	
 	switch (convention) {
 		case 'application':
-			return name + '.' + ext;
+			return newName + '.' + ext;
 			break;
 		case 'date':
 			return String(new Date().getTime()) + '.' + ext;
 			break;
 		default:
-			return String(new Date().getTime()) + '.' + ext;
+			return oldName + '.' + ext;
 	}	
 }
 
@@ -168,16 +139,24 @@ function getMime(img) {
 	return mime.lookup(img);
 }
 
-function resizeTo(img, ext, w) {
+/**
+ * @desc Wrapper Method that processes an image based on ext
+ * @param {String} sandboxPath Path to Sandboxed File
+ * @param {String} processPath Path to Processed File
+ * @param {String} ext File extention
+ * @param {Number} w Desired Width
+ * @param {Number} h Desired Height
+ */
+function resizeTo(sandboxPath, processPath, ext, w, h) {
 	switch (ext) {
 		case "jpeg":
-			resizeJpeg(img, w, false);
+			resizeJpeg(sandboxPath, processPath, w, h);
 			break;
 		case "gif":
-			resizeGif(img, w);
+			resizeGif(sandboxPath, processPath, w, h);
 			break;
 		case "png":
-			resizePng(img, w);
+			resizePng(sandboxPath, processPath, w, h);
 			break;
 	}
 }
@@ -197,23 +176,20 @@ function prepareOptions (post) {
 }
 
 /**
- * This method REPLACES the temp file with a resized one
+ * This method takes the sandboxed file and creates a resized one
+ * from it.
  */ 
-function resizeJpeg(img, w, h) {
+function resizeJpeg(sandboxPath, processPath, w, h) {
 	w = (w) ? w : false;
 	h = (h) ? h : false;
-	var src = gd.createFromJpeg(img);
+	var src = gd.createFromJpeg(sandboxPath);
 
-	if (w) h = rescaleFromWidth(w, src.width, src.height);
-	if (h) w = rescaleFromHeight(h, src.width, src.height);
+	var newWidth = (h) ? rescaleFromHeight(h, src.width, src.height) : w;
+	var newHeight = (w) ? rescaleFromWidth(w, src.width, src.height) : h;
 	
-	console.log('w', w);
-	console.log('h', h);
-	console.log('src', src);
-
-	var target = gd.createTrueColor(w, h);
-	src.copyResampled(target, 0, 0, 0, 0, w, h, src.width,src.height);
-	target.saveJpeg(img, 80);
+	var target = gd.createTrueColor(newWidth, newHeight);
+	src.copyResampled(target, 0, 0, 0, 0, newWidth, newHeight, src.width,src.height);
+	target.saveJpeg(processPath, 80);
 }
 
 function resizeGif(img, w, h) {
