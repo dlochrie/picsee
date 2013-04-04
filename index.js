@@ -36,8 +36,10 @@ Picsee.prototype.initialize = function (options) {
 	self._sandboxDir = options.sandboxDir || false;
 	self._processDir = options.processDir || false;
 	self._uploadDir = options.uploadDir || false;
+	self._versions = options.versions || false;
 	self._namingConvention = options.namingConvention || false;
 	self._inputFields = options.inputFields || [];
+	console.log('conf', self);
 	return self;
 }
 
@@ -69,9 +71,13 @@ Picsee.prototype.upload = function (req, res, cb) {
 	 */
 	for (var file in req.files) {
 		if (allowed.indexOf(file) !== -1) {
-			self.process(req.files[file], function(msg) {
-				cb({ title: 'Bad News', msg: msg });
-			});
+			// We are going to process the file, so we need to 
+			// know what versions of it we are working on.
+			self._versions.forEach(function (version) {
+				self.process(req.files[file], version, function (msg) {
+					cb({ title: 'Bad News', msg: msg });
+				});
+			})
 		}
 	}
 }
@@ -84,14 +90,18 @@ Picsee.prototype.crop = function (req, res) {
 	console.log(url.parse(req.body.image));
 }
 
-Picsee.prototype.process = function (image, cb) {
+Picsee.prototype.process = function (image, version, cb) {
 	// TODO: Handle errors and exceptions for dflt vars....
+
+	console.log('version', version)
+
 	var self = this,
 		oldName = image.name,
 		ext = getFileExt(oldName),
+		newName = Object.keys(version).shift(),
 		tmpPath = image.path,
-		sandboxPath = self._sandboxDir + self.renameImage(oldName, ext, null),
-		processPath = self._processDir + self.renameImage(oldName, ext, null);
+		sandboxPath = self._sandboxDir + self.renameImage(oldName, ext, newName),
+		processPath = self._processDir + self.renameImage(oldName, ext, newName);
 
 	fs.readFile(image.path, function (err, data) {
 		if (err) res.redirect('index');
@@ -132,7 +142,7 @@ Picsee.prototype.renameImage = function (oldName, ext, newName) {
 
 function getFileExt(file) {
 	var parts = file.split(".");
-	return parts[1];	
+	return parts[1].toLowerCase();	
 }
 
 function getMime(img) {
@@ -152,11 +162,17 @@ function resizeTo(sandboxPath, processPath, ext, w, h) {
 		case "jpeg":
 			resizeJpeg(sandboxPath, processPath, w, h);
 			break;
+		case "jpg":
+			resizeJpeg(sandboxPath, processPath, w, h);
+			break;
 		case "gif":
 			resizeGif(sandboxPath, processPath, w, h);
 			break;
 		case "png":
 			resizePng(sandboxPath, processPath, w, h);
+			break;
+		default:
+			return false;
 			break;
 	}
 }
@@ -183,6 +199,9 @@ function resizeJpeg(sandboxPath, processPath, w, h) {
 	w = (w) ? w : false;
 	h = (h) ? h : false;
 	var src = gd.createFromJpeg(sandboxPath);
+
+	console.log('sandboxPath', sandboxPath)
+	console.log('processPath', processPath)
 
 	var newWidth = (h) ? rescaleFromHeight(h, src.width, src.height) : w;
 	var newHeight = (w) ? rescaleFromWidth(w, src.width, src.height) : h;
