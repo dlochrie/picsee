@@ -37,6 +37,7 @@ Picsee.prototype.initialize = function (options) {
 	self._processDir = options.processDir || false;
 	self._uploadDir = options.uploadDir || false;
 	self._versions = options.versions || false;
+	self._separator = options.separator || false;
 	self._namingConvention = options.namingConvention || false;
 	self._inputFields = options.inputFields || [];
 	console.log('conf', self);
@@ -92,16 +93,15 @@ Picsee.prototype.crop = function (req, res) {
 
 Picsee.prototype.process = function (image, version, cb) {
 	// TODO: Handle errors and exceptions for dflt vars....
-
-	console.log('version', version)
-
 	var self = this,
 		oldName = image.name,
 		ext = getFileExt(oldName),
-		newName = Object.keys(version).shift(),
+		versionName = Object.keys(version).shift(),
 		tmpPath = image.path,
-		sandboxPath = self._sandboxDir + self.renameImage(oldName, ext, newName),
-		processPath = self._processDir + self.renameImage(oldName, ext, newName);
+		sandboxPath = self._sandboxDir + self.renameImage(oldName, false, versionName, ext),
+		processPath = self._processDir + self.renameImage(oldName, false, versionName, ext),
+		w = version.w || 0,
+		h = version.h || 0;
 
 	fs.readFile(image.path, function (err, data) {
 		if (err) res.redirect('index');
@@ -109,8 +109,7 @@ Picsee.prototype.process = function (image, version, cb) {
 			if (err) console.log('error!', err);
 			var mime = getMime(sandboxPath);
 			if (mimes_allowed.indexOf(mime) !== -1) {
-				var w = 400; // Um, NOT A CONSTANT!!!!!
-				resizeTo(sandboxPath, processPath, ext, w, 0);
+				resizeTo(sandboxPath, processPath, ext, w, h);
 				cb('Uploaded..');
 			} else {
 				var msg = 'Are you crazy???? You can\'t upload that kind of file <em>("' + mime +'")</em> !!!!';
@@ -123,20 +122,27 @@ Picsee.prototype.process = function (image, version, cb) {
 /** 
  * @description  Generates a name based on naming options 
  * @param {Object} image Image Object.
- * @param {String} name Optional Name (if passed).
+ * @param {String} oldName Original Name (if passed).
+ * @param {String} newName Desired New Name (if passed).
+ * @param {String} version Version (if passed).
  */
-Picsee.prototype.renameImage = function (oldName, ext, newName) {
+Picsee.prototype.renameImage = function (oldName, newName, version, ext) {
 	var self = this,
-		convention = self._namingConvention;	
+		convention = self._namingConvention,
+		separator = self._separator
+		closing = separator + version + '.' + ext;	
 	switch (convention) {
-		case 'application':
-			return newName + '.' + ext;
-			break;
 		case 'date':
-			return String(new Date().getTime()) + '.' + ext;
+			return String(new Date().getTime()) + closing;
+			break;
+		case 'original':
+			return oldName + closing;
+			break;
+		case 'custom':
+			return newName + closing;
 			break;
 		default:
-			return oldName + '.' + ext;
+			return oldName + closing;
 	}	
 }
 
