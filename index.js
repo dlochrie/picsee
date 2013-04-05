@@ -100,8 +100,8 @@ Picsee.prototype.process = function (image, version, cb) {
 		tmpPath = image.path,
 		sandboxPath = self._sandboxDir + self.renameImage(oldName, false, versionName, ext),
 		processPath = self._processDir + self.renameImage(oldName, false, versionName, ext),
-		w = version.w || 0,
-		h = version.h || 0;
+		w = version[versionName].w || 0,
+		h = version[versionName].h || 0;
 
 	fs.readFile(image.path, function (err, data) {
 		if (err) res.redirect('index');
@@ -204,14 +204,25 @@ function prepareOptions (post) {
 function resizeJpeg(sandboxPath, processPath, w, h) {
 	w = (w) ? w : false;
 	h = (h) ? h : false;
-	var src = gd.createFromJpeg(sandboxPath);
+	var src = gd.createFromJpeg(sandboxPath),
+		newWidth = src.width,
+		newHeight = src.height;
 
-	console.log('sandboxPath', sandboxPath)
-	console.log('processPath', processPath)
+	if (w && !h) { 
+		// If you have a 'width', but no 'height', then scale from width
+		console.log(w, h, 'scale from width')
+		newHeight = rescaleFromWidth(w, src.width, src.height);
+	} else if (h && !w) { 
+		// If you have a 'height', but no 'width', then scale from height
+		console.log(w, h, 'scale from height')
+		newWidth = rescaleFromHeight(h, src.width, src.height);
+	} else if (w && h) {
+		// Resize without rescaling
+		console.log(w, h, 'resize without rescaling')
+		newHeight = rescaleFromWidth(w, src.width, src.height);
+		newWidth = rescaleFromHeight(h, src.width, src.height);
+	}
 
-	var newWidth = (h) ? rescaleFromHeight(h, src.width, src.height) : w;
-	var newHeight = (w) ? rescaleFromWidth(w, src.width, src.height) : h;
-	
 	var target = gd.createTrueColor(newWidth, newHeight);
 	src.copyResampled(target, 0, 0, 0, 0, newWidth, newHeight, src.width,src.height);
 	target.saveJpeg(processPath, 80);
@@ -260,6 +271,9 @@ function rescaleFromWidth(w, sw, sh) {
  * @param sh Source Height
  */
 function rescaleFromHeight(h, sw, sh) {
+
+	console.log('rescaling from height', h, sw, sh);
+
 	h = parseInt(h);
 	sw = parseInt(sw);
 	sh = parseInt(sh);
