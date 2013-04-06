@@ -1,62 +1,219 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
-
     <title>Picsee by dlochrie</title>
-  </head>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
+  </head>
   <body>
 
-    <header>
-      <div class="container">
+      <header>
         <h1>Picsee</h1>
-        <h2></h2>
+        <p>Easy Photo Management for NodeJS, Express.</p>
+      </header>
 
-        <section id="downloads">
-          <a href="https://github.com/dlochrie/picsee/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/dlochrie/picsee/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/dlochrie/picsee" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
-        </section>
-      </div>
-    </header>
+      <div id="banner">
+        <span id="logo"></span>
 
-    <div class="container">
-      <section id="main_content">
-        <h3>Welcome to GitHub Pages.</h3>
+        <a href="https://github.com/dlochrie/picsee" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/dlochrie/picsee/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/dlochrie/picsee/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1>picsee</h1>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
+<h2>Description</h2>
+
+<p>Express-Compatible middleware that offers support for uploading photos, setting custom sizes, and 
+storing them locally or remotely.  </p>
+
+<p><em>Coming Soon</em>: API also offers RESTful support for photo uploads, photo retrieval, 
+and gallery management.</p>
+
+<h2>Goals</h2>
+
+<ul>
+<li>Provide a RESTFul interface that allows for photos to be uploaded safely to your app</li>
+<li>Be as lightweight as possible, so that you can use whatever ORM/DB/Store you want</li>
+<li>Offer a way to easily set desired sizes for your photo uploads through the conf.</li>
+<li>Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
+in a gallery.</li>
+<li>Hopefully offer support for Amazon S3 storage</li>
+<li>Hopefully offer support for client-side image manipulation</li>
+</ul><h2>How it Works</h2>
+
+<p>Picsee allows you to define <em>where</em> and <em>how</em> you want to save your photos. Using the GD library,
+Picsee resizes your photo and saves it according to your specifications.</p>
+
+<h3>Typical Use Case: Profile Photo</h3>
+
+<p>If you are creating a form where your user is uploading a profile photo, you are most-likely
+going to want 3 versions of the photo:  </p>
+
+<ul>
+<li>Small</li>
+<li>Medium</li>
+<li>Large</li>
+</ul><p>You name them, <em>thmb</em>, <em>med</em>, and <em>lrg</em> and your team/company/UI/UX/etc determines that:</p>
+
+<ul>
+<li>
+<strong>thmb</strong> = 32x32</li>
+<li>
+<strong>med</strong> = 200x[whatever]</li>
+<li>
+<strong>lrg</strong> = 800x[whatever]<br>
+</li>
+</ul><p>So, your thmb will be scaled and saved to 32*32, and your <em>med</em> will be rescaled so that it is 200 pixels wide by whatever height is proportional to the original.</p>
+
+<p>Your photos are saved according to whatever naming conventions you provide:</p>
+
+<ul>
+<li>
+<em><em>date</em></em>: 1365215413_thmb.jpg, 1365215413_med.jpg, 1365215413_lrg.jpg</li>
+<li>
+<em><em>original</em></em>: GradPhotos-0001-05-03-1977_thmb.jpg, etc</li>
+<li>
+<em><em>custom</em></em>: <em>Coming Soon</em>
+</li>
+</ul><p>Don't like underscores? Change the <code>separator</code> option.</p>
+
+<p>Before your photos are saved, the original is moved to a <code>staging</code> directory, 
+which you define. Here the Mime type is checked, and it is rejected if it is not
+a "jpg", "png", or "gif". </p>
+
+<h2>Install</h2>
+
+<pre><code>npm install picsee
 </code></pre>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<h3>Prerequisite: GD</h3>
 
-<h3>Designer Templates</h3>
+<p>You will need to have GD installed so that <code>node-gd</code> (a dependency) can compile. Please have GD installed first.</p>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<h4>GD on Mac</h4>
 
-<h3>Rather Drive Stick?</h3>
+<ol>
+<li>Get <a href="http://mxcl.github.io/homebrew/">HomeBrew</a>
+</li>
+<li><code>brew install gd</code></li>
+</ol><h4>GD on Ubuntu</h4>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<pre><code>apt-get install libgd2-xpm-dev
+</code></pre>
 
-<h3>Authors and Contributors</h3>
+<h3>App Setup</h3>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<pre><code>var picsee = require('picsee');
+</code></pre>
 
-<h3>Support or Contact</h3>
+<h4>Define Options</h4>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<p><em>Options</em>:</p>
+
+<ul>
+<li>stagingDir - sandboxed directory for uploading photo</li>
+<li>processDir - directory to save processed photo(s)</li>
+<li>versions - versions of photos with width and height option</li>
+<li>separator - character to use when concatenating file names, ie 
+<code>filename_thumb</code> where <em>filename</em> is the original filename, and <em>thumb</em> is the 
+name of the version. <code>-</code> or <code>_</code> should work.</li>
+<li>directories [under construction] - convention for storing files, 
+ie use one directory and name files with versions attached, 
+or store each file in a different directory named after the version</li>
+<li>namingConvention - how to name files?</li>
+<li>inputFields - given a form with multiple inputs, which input(s) contain a photo?</li>
+</ul><p><em>Example Usage</em>:</p>
+
+<pre><code>var options = {
+  stagingDir: staging,
+  processDir: processing,
+  versions: [  
+    { "thmb": { w: 32, h: 32 } },   
+    { "profile": { w: 200, h: null } },  
+    { "full": { w: null, h: null } }  
+  ],
+  separator: '_',  
+  directories: 'single',
+  namingConvention: 'date',
+  inputFields: ['profPhoto', 'other']
+}
+</code></pre>
+
+<h4>Configure</h4>
+
+<pre><code>app.configure(function (){
+  app.use(picsee.initialize(options));
+  // Call picsee before you set your routes
+  app.use(app.router);
+});
+</code></pre>
+
+<h4>Create Directories</h4>
+
+<p>Picsee requires that any directory you are uploading to <em>exists</em> and is <em>writeable</em> by <em>Node</em> or whatever user is running the app. </p>
+
+<h4>Usage with Express</h4>
+
+<pre><code>app.post('/upload', function(req, res, next) { 
+  picsee.upload(req, res, function(err, results) { 
+    if (err) { // Handle error... }
+    res.render('index', { title: 'Upload Complete', results: results });
+  })
+})
+</code></pre>
+
+<h3>Demo App</h3>
+
+<p>See: <a href="https://github.com/dlochrie/picsee-looksee">pisee-looksee</a>.</p>
+
+<h2>License</h2>
+
+<p>The MIT License (MIT)</p>
+
+<p>Copyright (c) 2013 Daniel Lochrie</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
       </section>
+      <footer>
+        <p>Project maintained by <a href="https://github.com/dlochrie">dlochrie</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></small></p>
+      </footer>
     </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-39906281-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
 
-    
   </body>
 </html>
