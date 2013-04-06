@@ -2,7 +2,11 @@ picsee
 =================
 
 ##Description  
-Express-Compatible middleware that offers support for uploading photos, setting custom sizes, and storing them locally or remotely. API also offers RESTful support for photo uploads, photo retrieval, and gallery management.
+Express-Compatible middleware that offers support for uploading photos, setting custom sizes, and 
+storing them locally or remotely.  
+
+_Coming Soon_: API also offers RESTful support for photo uploads, photo retrieval, 
+and gallery management.
 
 ##Goals
 
@@ -24,39 +28,44 @@ in a gallery.
 You will need to have GD installed so that `node-gd` (a dependency) can compile. Please have GD installed first.
 
 #### GD on Mac  
-1. Get HomeBrew
+1. Get [HomeBrew](http://mxcl.github.io/homebrew/)
 2. `brew install gd`
 
 #### GD on Ubuntu
     apt-get install libgd2-xpm-dev
 
-###App Setup: Under Construction
+###App Setup
 
     var picsee = require('picsee');
-    app.configure(function(){
+
+####Define Options
+    var options = {
+      stagingDir: staging,
+      processDir: processing,
+      versions: [  
+        { "thmb": { w: 32, h: 32 } },   
+        { "profile": { w: 200, h: null } },  
+        { "full": { w: null, h: null } }  
+      ],
+      separator: '_',  
+      directories: 'single',
+      namingConvention: 'date',
+      inputFields: ['profPhoto', 'other']
+    }
+
+####Configure
+    app.configure(function (){
       app.use(picsee.initialize(options));
       // Call picsee before you set your routes
       app.use(app.router);
     });
 
-###Create Your Conf: Under Construction
+####Create Directories
+Picsee requires that any directory you are uploading to _exists_ and is _writeable_ by _Node_ or whatever user is running the app. 
 
-In your conf, setup the sizes that are acceptable, with an array of [Width, Height]...  
+###Demo App
+See: [pisee-looksee](https://github.com/dlochrie/picsee-looksee).
 
-**TODO** add more about Conf here.
-
-    {  
-      "development": {  
-        "versions": {  
-          "thmb": [32, 32],   
-          "profile": [200, null],  
-          "full": [null, null]  
-        },  
-        "paths": { "....tbd" }  
-      }  
-    }  
-
-**TODO** add more info about how to use, describe RESTFul routes, etc.
 
 
 
