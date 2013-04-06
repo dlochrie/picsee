@@ -2,7 +2,8 @@ var fs = require('fs'),
 	path = require('path'),
 	url = require("url"),
 	gd = require('node-gd'), 
-	mime = require('mime');
+	mime = require('mime'),
+	async = require('async');
 
 /**
  * TODO: Verify this is a complete list
@@ -25,7 +26,7 @@ function Picsee () {
 
 /**
  * @param {Object} options Object containing application settungs
- * @property {String} _sandboxDir Safe location where file is validated
+ * @property {String} _stagingDir Safe location where file is validated
  * @property {String} _processDir Location of pre-processed file
  * @property {String} _uploadDir Final destination of uploaded file
  * @property {Array} _inputFields Named inputs that images will be uploaded from
@@ -33,14 +34,14 @@ function Picsee () {
 Picsee.prototype.initialize = function (options) {
 	var self = this;
   options = options || {};
-	self._sandboxDir = options.sandboxDir || false;
+	self._stagingDir = options.stagingDir || false;
 	self._processDir = options.processDir || false;
 	self._uploadDir = options.uploadDir || false;
 	self._versions = options.versions || false;
 	self._separator = options.separator || false;
 	self._namingConvention = options.namingConvention || false;
 	self._inputFields = options.inputFields || [];
-	console.log('conf', self);
+	//console.log('conf', self);
 	return self;
 }
 
@@ -66,21 +67,30 @@ Picsee.prototype.upload = function (req, res, cb) {
 	// Check to see if file is an acceptable image
 	var allowed = self._inputFields; // TODO: Better var name???
 
-	/**
-	 * Loop through each photo input, and process each
-	 * TODO: Work on CB and asynchronicity
-	 */
+	var photos = [];
+	var results = [];
+
+	// Add each approved input into the queue for processing 
 	for (var file in req.files) {
 		if (allowed.indexOf(file) !== -1) {
-			// We are going to process the file, so we need to 
-			// know what versions of it we are working on.
-			self._versions.forEach(function (version) {
-				self.process(req.files[file], version, function (msg) {
-					cb({ title: 'Bad News', msg: msg });
-				});
-			})
+			photos.push(req.files[file]);
 		}
 	}
+	
+	function preprocess(photo) {
+		if (photo) {
+			self.preprocess(photo, function (err, result) {
+				if (err) return cb('There was an error: ' + err, null);
+				results.push(result);
+				return preprocess(photos.shift());
+			});
+		} else {
+			return cb(null, results);
+		}
+	}
+
+	preprocess(photos.shift());
+
 }
 
 Picsee.prototype.crop = function (req, res) {
@@ -91,32 +101,85 @@ Picsee.prototype.crop = function (req, res) {
 	console.log(url.parse(req.body.image));
 }
 
-Picsee.prototype.process = function (image, version, cb) {
-	// TODO: Handle errors and exceptions for dflt vars....
+/**
+ * @desc
+ * (1) Save to `staging`
+ * (2) Validate mime
+ * (3) Either 
+ * (a) reject, based on mime and remove -or-
+ * (b) send to process each version
+ */
+Picsee.prototype.preprocess = function (image, cb) {
+
 	var self = this,
 		oldName = image.name,
 		ext = getFileExt(oldName),
-		versionName = Object.keys(version).shift(),
-		tmpPath = image.path,
-		sandboxPath = self._sandboxDir + self.renameImage(oldName, false, versionName, ext),
-		processPath = self._processDir + self.renameImage(oldName, false, versionName, ext),
-		w = version[versionName].w || 0,
-		h = version[versionName].h || 0;
+		stagingPath = renameForStaging(self._stagingDir, oldName, ext);
+	
+	var opts = {
+		image: image,
+		stagingPath: stagingPath,
+		ext: ext
+	}
 
 	fs.readFile(image.path, function (err, data) {
-		if (err) res.redirect('index');
-		fs.writeFile(sandboxPath, data, function (err) {
-			if (err) console.log('error!', err);
-			var mime = getMime(sandboxPath);
+		if (err) return cb('Cannot read file: ' + oldName, null); 
+		// TODO: Delete file.
+		fs.writeFile(stagingPath, data, function (err) {
+			if (err) return cb('Cannot save file: ' + stagingPath, null);
+			// TODO: Delete file. 
+			var mime = getMime(stagingPath);
 			if (mimes_allowed.indexOf(mime) !== -1) {
-				resizeTo(sandboxPath, processPath, ext, w, h);
-				cb('Uploaded..');
+				self.process(opts, cb);
 			} else {
-				var msg = 'Are you crazy???? You can\'t upload that kind of file <em>("' + mime +'")</em> !!!!';
-				return cb(msg);
+				return cb('This file is NOT an image: ' + oldName, null); 
+				// TODO: Delete file.
 			}
 		});
 	});
+}
+
+/**
+ * Saves a rescaled copy of each image for predefined
+ * versions.
+ * Once all versions are saved, the `staging` version of
+ * the file is removed.
+ *
+ * @param {Object} opts Object containing Image properties and settings
+ * @param {Function} cb Callback function to execute when all versions are processed
+ */
+Picsee.prototype.process = function (opts, cb) {
+	var self = this,
+		versions = self._versions,
+		oldName = opts.image.name,
+		ext = opts.ext,
+		results = [];
+
+	function processVersion(version) {
+		if (version) {
+			var versionName = Object.keys(version).shift(),
+				rename = self.renameImage(oldName, false, versionName, ext);
+
+			var params = {
+				stagingPath: opts.stagingPath,
+				processPath: self._processDir + rename,
+				ext: ext,
+				w: version[versionName].w || 0,
+				h: version[versionName].h || 0,
+			}
+
+			resizeTo(params, function (err, result) {
+				if (err) return cb('There was an error resizing the photo: ' + err, null);
+				results.push(result);
+				return processVersion(versions.shift());
+			});
+		} else {
+			// TODO: Delete Staging file now that Queue is clear.
+			return cb(null, results);
+		}
+	}
+
+	processVersion(versions.shift());
 }
 
 /** 
@@ -146,45 +209,74 @@ Picsee.prototype.renameImage = function (oldName, newName, version, ext) {
 	}	
 }
 
-function getFileExt(file) {
+/**
+ * Rename for Staging. Name is concatenated with UNIX Date
+ * so that it is easy to identify files for cleanup, ie with 
+ * a cron-job or post-process.
+ *
+ * @param {String} stagingDir Path to staging photos.
+ * @param {String} oldName Original Filename, less path
+ * @param {String} ext extension for file.
+ */
+function renameForStaging (stagingDir, oldName, ext) {
+	var fname = getFileRoot(oldName);
+	return stagingDir + fname + '_' + String(new Date().getTime()) 
+		+ '.' + ext;
+}
+
+/**
+ * Get file extension - mime validated elsewhere
+ * 
+ * @param {String} file Filename
+ */
+function getFileExt (file) {
 	var parts = file.split(".");
 	return parts[1].toLowerCase();	
 }
 
-function getMime(img) {
+/**
+ * Returns just the Name of the file, less ext
+ *
+ * @param {String} file Filename
+ */
+function getFileRoot (file) {
+	var parts = file.split(".");
+	parts.pop();
+	return parts.join('.');
+}
+
+function getMime (img) {
 	return mime.lookup(img);
 }
 
 /**
  * @desc Wrapper Method that processes an image based on ext
- * @param {String} sandboxPath Path to Sandboxed File
- * @param {String} processPath Path to Processed File
- * @param {String} ext File extention
- * @param {Number} w Desired Width
- * @param {Number} h Desired Height
+ * @param {Object} opts Object containing data needed for rescaling/saving
+ * photo
  */
-function resizeTo(sandboxPath, processPath, ext, w, h) {
-	switch (ext) {
+function resizeTo (opts, cb) {
+	switch (opts.ext) {
 		case "jpeg":
-			resizeJpeg(sandboxPath, processPath, w, h);
+			resizeJpeg(opts, cb);
 			break;
 		case "jpg":
-			resizeJpeg(sandboxPath, processPath, w, h);
+			resizeJpeg(opts, cb);
 			break;
 		case "gif":
-			resizeGif(sandboxPath, processPath, w, h);
+			resizeGif(opts, cb);
 			break;
 		case "png":
-			resizePng(sandboxPath, processPath, w, h);
+			resizePng(opts, cb);
 			break;
 		default:
-			return false;
+			cb('Could not determine file extension + ' + opts.ext, null);
 			break;
 	}
 }
 
 /**
  * Create an object containing the Coordinates of the cropped image
+ * @param {Object} post Object containing coordinated for cropping an image.
  */ 
 function prepareOptions (post) {
 	return {
@@ -198,37 +290,24 @@ function prepareOptions (post) {
 }
 
 /**
- * This method takes the sandboxed file and creates a resized one
+ * This method takes the staging file and creates a resized one
  * from it.
  */ 
-function resizeJpeg(sandboxPath, processPath, w, h) {
-	w = (w) ? w : false;
-	h = (h) ? h : false;
-	var src = gd.createFromJpeg(sandboxPath),
-		newWidth = src.width,
-		newHeight = src.height;
+function resizeJpeg (opts, cb) {
+	var src = gd.createFromJpeg(opts.stagingPath),
+		w = (opts.w) ? opts.w : false,
+		h = (opts.h) ? opts.h : false,
+		dims = parseDimensions(w, h, src.width, src.height);
 
-	if (w && !h) { 
-		// If you have a 'width', but no 'height', then scale from width
-		console.log(w, h, 'scale from width')
-		newHeight = rescaleFromWidth(w, src.width, src.height);
-	} else if (h && !w) { 
-		// If you have a 'height', but no 'width', then scale from height
-		console.log(w, h, 'scale from height')
-		newWidth = rescaleFromHeight(h, src.width, src.height);
-	} else if (w && h) {
-		// Resize without rescaling
-		console.log(w, h, 'resize without rescaling')
-		newHeight = rescaleFromWidth(w, src.width, src.height);
-		newWidth = rescaleFromHeight(h, src.width, src.height);
-	}
-
-	var target = gd.createTrueColor(newWidth, newHeight);
-	src.copyResampled(target, 0, 0, 0, 0, newWidth, newHeight, src.width,src.height);
-	target.saveJpeg(processPath, 80);
+	var target = gd.createTrueColor(dims.w, dims.h);
+	src.copyResampled(target, 0, 0, 0, 0, dims.w, dims.h, src.width, src.height);
+	target.saveJpeg(opts.processPath, 80, function (err) { 
+		if (err) return cb('Could not save processed image: ' + opts.processPath, null); 
+		return cb(null, true);
+	});
 }
 
-function resizeGif(img, w, h) {
+function resizeGif (img, w, h) {
 	w = (w) ? w : false;
 	h = (h) ? h : false;
 	var src = gd.createFromGif(img);
@@ -239,7 +318,7 @@ function resizeGif(img, w, h) {
 	target.saveGif(img, 80);
 }
 
-function resizePng(img, w, h) {
+function resizePng (img, w, h) {
 	w = (w) ? w : false;
 	h = (h) ? h : false;
 	var src = gd.createFromPng(img);
@@ -250,13 +329,32 @@ function resizePng(img, w, h) {
 	target.savePng(img, 9);
 }
 
+function parseDimensions (w, h, sw, sh) {
+	var newWidth,
+		newHeight;
+	if (!w && !h) {
+		newWidth = sw,
+		newHeight = sh;
+	} else if (w && h) {
+		newWidth = w;
+		newHeight = h;
+	} else if (w && !h) { 
+		newWidth = w;
+		newHeight = rescaleFromWidth(w, sw, sh);
+	} else if (h && !w) { 
+		newHeight = h;
+		newWidth = rescaleFromHeight(h, sw, sh);
+	}
+	return { w: newWidth, h: newHeight };
+}
+
 /**
  * @description Calculates new Height based on Desired Width
  * @param w Desired Width
  * @param sw Source Width
  * @param sh Source Height
  */
-function rescaleFromWidth(w, sw, sh) {
+function rescaleFromWidth (w, sw, sh) {
 	w = parseInt(w);
 	sw = parseInt(sw);
 	sh = parseInt(sh);
@@ -270,10 +368,7 @@ function rescaleFromWidth(w, sw, sh) {
  * @param sw Source Width
  * @param sh Source Height
  */
-function rescaleFromHeight(h, sw, sh) {
-
-	console.log('rescaling from height', h, sw, sh);
-
+function rescaleFromHeight (h, sw, sh) {
 	h = parseInt(h);
 	sw = parseInt(sw);
 	sh = parseInt(sh);
