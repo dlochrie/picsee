@@ -40,9 +40,9 @@ So, your thmb will be scaled and saved to 32*32, and your _med_ will be rescaled
 
 Your photos are saved according to whatever naming conventions you provide:
 
-* *_date_*: 1365215413_thmb.jpg, 1365215413_med.jpg, 1365215413_lrg.jpg
-* *_original_*: GradPhotos-0001-05-03-1977_thmb.jpg, etc
-* *_custom_*: _Coming Soon_
+* **_date_**: 1365215413_thmb.jpg, 1365215413_med.jpg, 1365215413_lrg.jpg
+* **_original_**: GradPhotos-0001-05-03-1977_thmb.jpg, etc
+* **_custom_**: _Coming Soon_
 
 Don't like underscores? Change the `separator` option.
 
@@ -71,10 +71,12 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 
 ####Define Options
 
-*Options*:
- * stagingDir - sandboxed directory for uploading photo
+*Options*:  
+
+ * stagingDir - sandboxed (temporary) directory for uploading photos
  * processDir - directory to save processed photo(s)
  * versions - versions of photos with width and height option
+    * Format: `{ "version name": { w: 200, h: 200 } }`. 
  * separator - character to use when concatenating file names, ie 
 `filename_thumb` where _filename_ is the original filename, and _thumb_ is the 
 name of the version. `-` or `_` should work.
@@ -82,13 +84,19 @@ name of the version. `-` or `_` should work.
 ie use one directory and name files with versions attached, 
 or store each file in a different directory named after the version
  * namingConvention - how to name files?
+    * date
+    * original
+    * custom
  * inputFields - given a form with multiple inputs, which input(s) contain a photo?
+   * Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. 
+You can add as many as you want, and Picsee will process them all. 
 
 *Example Usage*:
 
+    var docroot = '/var/www/myproject/';
     var options = {
-      stagingDir: staging,
-      processDir: processing,
+      stagingDir: '/full/path/outside/of/project',
+      processDir: docroot + 'public/photos/,
       versions: [  
         { "thmb": { w: 32, h: 32 } },   
         { "profile": { w: 200, h: null } },  
@@ -99,6 +107,10 @@ or store each file in a different directory named after the version
       namingConvention: 'date',
       inputFields: ['profPhoto', 'other']
     }
+
+*NOTE*: For security purposes, where you put the `stagingDir` is important. It is in the staging directory 
+that the file is being validated as a real file, and its mime-type is checked. If it does not pass validation,
+it won't make it into your application's photo location. 
 
 ####Configure
     app.configure(function (){
