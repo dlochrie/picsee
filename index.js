@@ -32,8 +32,11 @@ function Picsee () {
 Picsee.prototype.initialize = function (options) {
 	var self = this;
   options = options || {};
+  self._docRoot = options.docRoot || false;
+  self._urlRoot = options.urlRoot || false;
 	self._stagingDir = options.stagingDir || false;
 	self._processDir = options.processDir || false;
+	self._uploadDir = options.uploadDir || false;
 	self._versions = options.versions || false;
 	self._separator = options.separator || false;
 	self._namingConvention = options.namingConvention || false;
@@ -52,11 +55,6 @@ Picsee.prototype.initialize = function (options) {
  * an image still retains a great deal of clarity.
  */ 
 
-/**
- * This example crops the image in half
- * See: https://github.com/taggon/node-gd/wiki/Usage
- */ 
-
 Picsee.prototype.upload = function (req, res, cb) {
 	var self = this,
 		allowedInputs = self._inputFields, 
@@ -67,6 +65,35 @@ Picsee.prototype.upload = function (req, res, cb) {
 	for (var file in req.files) {
 		if (allowedInputs.indexOf(file) !== -1) {
 			photos.push(req.files[file]);
+		}
+	}
+	
+	function validate(photo) {
+		if (photo) {
+			self.validate(photo, function (err, result) {
+				if (err) return cb('There was an error: ' + err, null);
+				results.push(result);
+				return validate(photos.shift());
+			});
+		} else {
+			return cb(null, results);
+		}
+	}
+
+	validate(photos.shift());
+}
+
+/**
+ * Create the versions for the uploaded photo.
+ * When all versions have been successfully processed,
+ * the `staging` photo should be deleted.
+ */
+Picsee.prototype.process = function (files) {
+
+	// Add each approved input into the queue for processing 
+	for (var file in files) {
+		if (allowedInputs.indexOf(file) !== -1) {
+			photos.push(files[file]);
 		}
 	}
 	
@@ -81,15 +108,43 @@ Picsee.prototype.upload = function (req, res, cb) {
 			return cb(null, results);
 		}
 	}
+
 	preprocess(photos.shift());
 }
 
+/** 
+ * Crops photo based on provided specifications
+ */
 Picsee.prototype.crop = function (req, res) {
-	options = prepareOptions(req.body);
-	console.log("post", req.body)
-	console.log("options:", options);
-	var path = path.dirname(url.parse(req.body.image).pathname);
-	console.log(url.parse(req.body.image));
+	opts = prepareOptions(req.body);
+	var image = req.body.image;
+
+	// TODO: Determine MIME, and then process based on that
+	// IE function cropJpeg, etc
+
+	var src = gd.createFromJpeg(image)
+	var target = gd.createTrueColor(opts.w, opts.h);
+
+	// Crop
+	src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+		opts.w, opts.h);
+
+	target.saveJpeg(image, 80, function (err) { 
+		console.log('err?', err)
+		console.log('image', image);
+		// DO CALLBACk!
+	});	
+}
+
+function cropJpeg () {
+
+}
+
+function cropGif () {
+	
+}
+function cropPng () {
+
 }
 
 /**
@@ -100,11 +155,14 @@ Picsee.prototype.crop = function (req, res) {
  * (a) reject, based on mime and remove -or-
  * (b) send to process each version
  */
-Picsee.prototype.preprocess = function (image, cb) {
+Picsee.prototype.validate = function (image, cb) {
 	var self = this,
 		oldName = image.name,
 		ext = getFileExt(oldName),
-		stagingPath = renameForStaging(self._stagingDir, oldName, ext);
+		tmpName = renameForProcessing(oldName, ext),
+		stagingPath = self._stagingDir + tmpName,
+		processPath = self._docRoot + self._processDir + tmpName,
+		url = self._urlRoot + self._processDir + tmpName;
 	
 	var opts = {
 		image: image,
@@ -114,16 +172,23 @@ Picsee.prototype.preprocess = function (image, cb) {
 
 	fs.readFile(image.path, function (err, data) {
 		if (err) return cb('Cannot read file: ' + oldName, null); 
-		// TODO: Delete file.
+		// TODO: Delete Staging File
 		fs.writeFile(stagingPath, data, function (err) {
+			console.log('Saving to Staging:', stagingPath);
 			if (err) return cb('Cannot save file: ' + stagingPath, null);
-			// TODO: Delete file. 
+			// TODO: Delete Staging File
 			var mime = getMime(stagingPath);
 			if (MIMES_ALLOWED.indexOf(mime) !== -1) {
-				self.process(opts, cb);
+				fs.writeFile(processPath, data, function (err) {
+					console.log('Saving to Process:', processPath);
+					if (err) return cb('Cannot save file: ' + processPath, null);
+					// TODO: Delete Staging File
+					var dims = getRealDimensions(processPath);
+					cb(null, { name: tmpName, path: processPath, url: url, w: dims.w, h: dims.h  });
+				});
 			} else {
-				return cb('This file is NOT an image: ' + oldName, null); 
-				// TODO: Delete file.
+				return cb('File is NOT an image: ' + oldName, null); 
+				// TODO: Delete Staging file.
 			}
 		});
 	});
@@ -201,17 +266,16 @@ Picsee.prototype.renameImage = function (oldName, newName, version, ext) {
 }
 
 /**
- * Rename for Staging. Name is concatenated with UNIX Date
+ * Rename for Processing. Name is concatenated with UNIX Date
  * so that it is easy to identify files for cleanup, ie with 
  * a cron-job or post-process.
  *
- * @param {String} stagingDir Path to staging photos.
  * @param {String} oldName Original Filename, less path
  * @param {String} ext extension for file.
  */
-function renameForStaging (stagingDir, oldName, ext) {
+function renameForProcessing (oldName, ext) {
 	var fname = getFileRoot(oldName);
-	return stagingDir + fname + '_' + String(new Date().getTime()) 
+	return fname + '_' + String(new Date().getTime()) 
 		+ '.' + ext;
 }
 
@@ -238,6 +302,11 @@ function getFileRoot (file) {
 
 function getMime (img) {
 	return mime.lookup(img);
+}
+
+function getRealDimensions(img) {
+	var src = gd.createFromJpeg(img);
+	return { w: src.width, h: src.height };
 }
 
 /**
@@ -271,12 +340,12 @@ function resizeTo (opts, cb) {
  */ 
 function prepareOptions (post) {
 	return {
-		x1: post.coordx1,
-		y1: post.coordy1,
-		x2: post.coordx2,
-		y2: post.coordy2,
-		w: post.w,
-		h: post.h
+		x1: parseInt(post.coordx1),
+		y1: parseInt(post.coordy1),
+		x2: parseInt(post.coordx2),
+		y2: parseInt(post.coordy2),
+		w: parseInt(post.w),
+		h: parseInt(post.h)
 	}
 }
 
