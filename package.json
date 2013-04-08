@@ -1,21 +1,36 @@
 {
-	"name": "picsee",
-	"version": "0.0.2",
-	"author": { "name": "Daniel Lochrie" },
-	"description": "Node middleware for Photo Management and Image Uploading, ExpressJS Compatible.",
-	"engines": { "node": ">= 0.0.8" },
-	"dependencies": {
-		"express": "3.x",
-		"node-gd": "*",
-		"mime": "*",
-		"async": "*"
-	},
-	"main": "./index.js",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/dlochrie/picsee.git"
-	},
-	"scripts": {
-		"test": "node test"
-	}
+  "name": "picsee",
+  "version": "0.0.2",
+  "author": "Daniel Lochrie",
+  "description": "Node middleware for Photo Management and Image Uploading, ExpressJS Compatible.",
+  "engines": {
+    "node": ">= 0.0.8"
+  },
+  "dependencies": {
+    "express": "3.x",
+    "node-gd": "*",
+    "mime": "*",
+    "async": "*"
+  },
+  "main": "./index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dlochrie/picsee.git"
+  },
+  "scripts": {
+    "test": "node test"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "picsee",
+    "image",
+    "manager",
+    "uploader",
+    "photo",
+    "cropper"
+  ],
+  "license": "MIT"
 }
