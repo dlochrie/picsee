@@ -1,6 +1,5 @@
 var fs = require('fs'),
 	path = require('path'),
-	url = require("url"),
 	gd = require('node-gd'), 
 	mime = require('mime');
 
@@ -31,15 +30,19 @@ function Picsee () {
  */
 Picsee.prototype.initialize = function (options) {
 	var self = this;
-  options = options || {};
-  self._docRoot = options.docRoot || false;
-  self._urlRoot = options.urlRoot || false;
+	options = options || {};
+	self._docRoot = options.docRoot || false;
+	self._urlRoot = options.urlRoot || false;
 	self._stagingDir = options.stagingDir || false;
 	self._processDir = options.processDir || false;
 	self._uploadDir = options.uploadDir || false;
 	self._versions = options.versions || false;
 	self._separator = options.separator || false;
 	self._namingConvention = options.namingConvention || false;
+	self._maxSize = 4000; // TODO Default to 5 MB
+	self._jpgQty = options.jpgQty || 80;
+	self._gifQty = options.gifQty || 80;
+	self._pngQty = options.pngQty || 9;
 	self._inputFields = options.inputFields || [];
 	return self;
 }
@@ -54,7 +57,6 @@ Picsee.prototype.initialize = function (options) {
  * smoothly interpolating pixel values so that, in particular, reducing the size of 
  * an image still retains a great deal of clarity.
  */ 
-
 Picsee.prototype.upload = function (req, res, cb) {
 	var self = this,
 		allowedInputs = self._inputFields, 
@@ -84,76 +86,12 @@ Picsee.prototype.upload = function (req, res, cb) {
 }
 
 /**
- * Create the versions for the uploaded photo.
- * When all versions have been successfully processed,
- * the `staging` photo should be deleted.
- */
-Picsee.prototype.process = function (files) {
-
-	// Add each approved input into the queue for processing 
-	for (var file in files) {
-		if (allowedInputs.indexOf(file) !== -1) {
-			photos.push(files[file]);
-		}
-	}
-	
-	function preprocess(photo) {
-		if (photo) {
-			self.preprocess(photo, function (err, result) {
-				if (err) return cb('There was an error: ' + err, null);
-				results.push(result);
-				return preprocess(photos.shift());
-			});
-		} else {
-			return cb(null, results);
-		}
-	}
-
-	preprocess(photos.shift());
-}
-
-/** 
- * Crops photo based on provided specifications
- */
-Picsee.prototype.crop = function (req, res) {
-	opts = prepareOptions(req.body);
-	var image = req.body.image;
-
-	// TODO: Determine MIME, and then process based on that
-	// IE function cropJpeg, etc
-
-	var src = gd.createFromJpeg(image)
-	var target = gd.createTrueColor(opts.w, opts.h);
-
-	// Crop
-	src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
-		opts.w, opts.h);
-
-	target.saveJpeg(image, 80, function (err) { 
-		console.log('err?', err)
-		console.log('image', image);
-		// DO CALLBACk!
-	});	
-}
-
-function cropJpeg () {
-
-}
-
-function cropGif () {
-	
-}
-function cropPng () {
-
-}
-
-/**
  * @desc
  * (1) Save to `staging`
  * (2) Validate mime
- * (3) Either 
- * (a) reject, based on mime and remove -or-
- * (b) send to process each version
+ * (3) Either: 
+ * -- (a) reject, based on mime and remove -or-
+ * -- (b) send to process each version
  */
 Picsee.prototype.validate = function (image, cb) {
 	var self = this,
@@ -164,23 +102,15 @@ Picsee.prototype.validate = function (image, cb) {
 		processPath = self._docRoot + self._processDir + tmpName,
 		url = self._urlRoot + self._processDir + tmpName;
 	
-	var opts = {
-		image: image,
-		stagingPath: stagingPath,
-		ext: ext
-	}
-
 	fs.readFile(image.path, function (err, data) {
 		if (err) return cb('Cannot read file: ' + oldName, null); 
 		// TODO: Delete Staging File
 		fs.writeFile(stagingPath, data, function (err) {
-			console.log('Saving to Staging:', stagingPath);
 			if (err) return cb('Cannot save file: ' + stagingPath, null);
 			// TODO: Delete Staging File
 			var mime = getMime(stagingPath);
 			if (MIMES_ALLOWED.indexOf(mime) !== -1) {
 				fs.writeFile(processPath, data, function (err) {
-					console.log('Saving to Process:', processPath);
 					if (err) return cb('Cannot save file: ' + processPath, null);
 					// TODO: Delete Staging File
 					var dims = getRealDimensions(processPath);
@@ -194,6 +124,35 @@ Picsee.prototype.validate = function (image, cb) {
 	});
 }
 
+/** 
+ * Crops photo based on provided specifications
+ */
+Picsee.prototype.crop = function (req, res, cb) {
+	var self = this,
+		opts = prepareOptions(req.body),
+		image = req.body.image,
+		mime = getMime(image);
+
+	// TODO: Determine MIME, and then process based on that
+	// IE function cropJpeg, etc
+
+	var src = gd.createFromJpeg(image)
+	var target = gd.createTrueColor(opts.w, opts.h);
+
+	src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+		opts.w, opts.h);
+
+	target.saveJpeg(image, 80, function (err) {
+		if (err) return cb(err, null);
+		var opts = {
+			image: { name: path.basename(image) || null },
+			processPath: image || null,
+			ext: getFileExt(image) || null
+		}
+		self.process(opts, cb); 
+	});	
+}
+
 /**
  * Saves a rescaled copy of each image for predefined
  * versions.
@@ -201,31 +160,35 @@ Picsee.prototype.validate = function (image, cb) {
  * the file is removed.
  *
  * @param {Object} opts Object containing Image properties and settings
+ *    TODO: Describe opts `image.name`, `stagingPath`, `ext`
  * @param {Function} cb Callback function to execute when all versions are processed
  */
 Picsee.prototype.process = function (opts, cb) {
 	var self = this,
-		versions = self._versions,
+		versions = self._versions.slice(0), // Clone, don't modify
+		separator = self._separator,
 		oldName = opts.image.name,
+		newName = self.renameImage(oldName, false),
 		ext = opts.ext,
 		results = [];
 
 	function processVersion(version) {
 		if (version) {
 			var versionName = Object.keys(version).shift(),
-				rename = self.renameImage(oldName, false, versionName, ext);
+				closing = separator + versionName + '.' + ext,
+				fileName = newName + closing;	
 
 			var params = {
-				stagingPath: opts.stagingPath,
-				processPath: self._processDir + rename,
-				imageName: rename,
+				processPath: opts.processPath, 
+				uploadPath: self._docRoot + self._uploadDir + fileName,
+				imageName: fileName,
 				ext: ext,
 				w: version[versionName].w || 0,
 				h: version[versionName].h || 0,
 			}
 
 			resizeTo(params, function (err, result) {
-				if (err) return cb('There was an error resizing the photo: ' + err, null);
+				if (err) return cb(err, null);
 				results.push(result);
 				return processVersion(versions.shift());
 			});
@@ -238,30 +201,41 @@ Picsee.prototype.process = function (opts, cb) {
 	processVersion(versions.shift());
 }
 
+function cropJpeg () {
+
+}
+
+function cropGif () {
+	
+}
+
+function cropPng () {
+
+}
+
 /** 
  * @description  Generates a name based on naming options 
- * @param {Object} image Image Object.
  * @param {String} oldName Original Name (if passed).
  * @param {String} newName Desired New Name (if passed).
- * @param {String} version Version (if passed).
  */
-Picsee.prototype.renameImage = function (oldName, newName, version, ext) {
+Picsee.prototype.renameImage = function (oldName, newName) {
 	var self = this,
 		convention = self._namingConvention,
-		separator = self._separator
-		closing = separator + version + '.' + ext;	
+		separator = self._separator;	
+
+	// TODO: Normalize names...
 	switch (convention) {
 		case 'date':
-			return String(new Date().getTime()) + closing;
+			return String(new Date().getTime());
 			break;
 		case 'original':
-			return oldName + closing;
+			return oldName;
 			break;
 		case 'custom':
-			return newName + closing;
+			return newName;
 			break;
 		default:
-			return oldName + closing;
+			return oldName;
 	}	
 }
 
@@ -285,8 +259,8 @@ function renameForProcessing (oldName, ext) {
  * @param {String} file Filename
  */
 function getFileExt (file) {
-	var parts = file.split(".");
-	return parts[1].toLowerCase();	
+	var ext = path.extname(file || '').split('.');
+	return ext[ext.length - 1];
 }
 
 /**
@@ -350,22 +324,22 @@ function prepareOptions (post) {
 }
 
 /**
- * This method takes the staging file and creates a resized one
+ * This method takes the pre-processed file and creates a resized one
  * from it.
  * `80` describes the quality we are saving it at. 
  */ 
 function resizeJpeg (opts, cb) {
-	var src = gd.createFromJpeg(opts.stagingPath),
+	var src = gd.createFromJpeg(opts.processPath),
 		w = (opts.w) ? opts.w : false,
 		h = (opts.h) ? opts.h : false,
 		dims = parseDimensions(w, h, src.width, src.height);
 
 	var target = gd.createTrueColor(dims.w, dims.h);
 	src.copyResampled(target, 0, 0, 0, 0, dims.w, dims.h, src.width, src.height);
-	target.saveJpeg(opts.processPath, 80, function (err) { 
-		if (err) return cb('Could not save processed image: ' + opts.processPath, null); 
+	target.saveJpeg(opts.uploadPath, 80, function (err) { 
+		if (err) return cb('Could not save processed image: ' + opts.uploadPath, null); 
 		return cb(null, { status: 'success', image: opts.imageName, 
-			path: opts.processPath });
+			path: opts.uploadPath });
 	});
 }
 
