@@ -30,22 +30,23 @@ function Picsee () {
  * @property {String} _uploadDir Final destination of uploaded file
  * @property {Array} _inputFields Named inputs that images will be uploaded from
  */
-Picsee.prototype.initialize = function (options) {
+Picsee.prototype.initialize = function (opts) {
 	var self = this;
-	options = options || {};
-	self._docRoot = options.docRoot || false;
-	self._urlRoot = options.urlRoot || false;
-	self._stagingDir = options.stagingDir || false;
-	self._processDir = options.processDir || false;
-	self._uploadDir = options.uploadDir || false;
-	self._versions = options.versions || false;
-	self._separator = options.separator || false;
-	self._namingConvention = options.namingConvention || false;
-	self._maxSize = 4000; // TODO Default to 5 MB
-	self._jpgQlty = options.jpgQlty || 80;
-	self._gifQlty = options.gifQlty || 80;
-	self._pngQlty = options.pngQlty || 9;
-	self._inputFields = options.inputFields || [];
+	opts = opts || {};
+	self._docRoot = opts.docRoot || false;
+	self._urlRoot = opts.urlRoot || false;
+	self._stagingDir = opts.stagingDir || false;
+	self._processDir = opts.processDir || false;
+	self._uploadDir = opts.uploadDir || false;
+	self._versions = opts.versions || false;
+	self._separator = opts.separator || false;
+	self._directories = {};
+	self._namingConvention = opts.namingConvention || false;
+	self._maxSize = utils.getMaxSize(opts.maxSize); 
+	self._jpgQlty = opts.jpgQlty || 80;
+	self._gifQlty = opts.gifQlty || 80;
+	self._pngQlty = opts.pngQlty || 9;
+	self._inputFields = opts.inputFields || [];
 	return self;
 }
 
@@ -107,6 +108,8 @@ Picsee.prototype.validate = function (image, cb) {
 	
 	fs.readFile(image.path, function (err, data) {
 		if (err) return cb('Cannot read file: ' + oldName, null); 
+		if (image.size > self._maxSize) 
+			return cb('Image is too large: ' + oldName, null)
 		fs.writeFile(stagingPath, data, function (err) {
 			if (err) return cb('Cannot save file: ' + stagingPath, null);
 			var mime = utils.getMime(stagingPath);
@@ -116,9 +119,11 @@ Picsee.prototype.validate = function (image, cb) {
 						msg = 'Cannot save file: ' + processPath;
 						return utils.removeImage(stagingPath, msg, cb);
 					}
-					var dims = utils.getRealDimensions(processPath, mime);
-					return cb(null, { name: tmpName, path: processPath, url: url, 
-						w: dims.w, h: dims.h  });
+					utils.removeImage(stagingPath, null, function () {
+						var dims = utils.getRealDimensions(processPath, mime);
+						return cb(null, { name: tmpName, path: processPath, url: url, 
+							w: dims.w, h: dims.h  });
+					});
 				});
 			} else {
 				msg = 'File is NOT an image: ' + oldName;
@@ -196,8 +201,9 @@ Picsee.prototype.process = function (opts, cb) {
 				return processVersion(versions.shift());
 			});
 		} else {
-			// TODO: Delete Processed file...
-			return cb(null, results);
+			utils.removeImage(opts.processPath, null, function() {
+				return cb(null, results);
+			});
 		}
 	}
 
