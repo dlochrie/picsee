@@ -10,7 +10,7 @@
     "express": "3.x",
     "node-gd": "*",
     "mime": "*",
-    "async": "*"
+    "should": "*"
   },
   "main": "./index.js",
   "repository": {
