@@ -114,7 +114,7 @@ Picsee.prototype.validate = function (image, cb) {
 				fs.writeFile(processPath, data, function (err) {
 					if (err) {
 						msg = 'Cannot save file: ' + processPath;
-						return removeImage(stagingPath, msg, cb);
+						return utils.removeImage(stagingPath, msg, cb);
 					}
 					var dims = utils.getRealDimensions(processPath, mime);
 					return cb(null, { name: tmpName, path: processPath, url: url, 
@@ -122,7 +122,7 @@ Picsee.prototype.validate = function (image, cb) {
 				});
 			} else {
 				msg = 'File is NOT an image: ' + oldName;
-				return removeImage(stagingPath, msg, cb);
+				return utils.removeImage(stagingPath, msg, cb);
 			}
 		});
 	});
@@ -255,20 +255,18 @@ Picsee.prototype.cropPng = function (image, opts, cb) {
 Picsee.prototype.renameImage = function (oldName, newName) {
 	var self = this,
 		convention = self._namingConvention;	
-
-	// TODO: Normalize names...
 	switch (convention) {
 		case 'date':
 			return String(new Date().getTime());
 			break;
 		case 'original':
-			return oldName;
+			return utils.normalizeName(oldName);
 			break;
 		case 'custom':
-			return newName;
+			return utils.normalizeName(newName);
 			break;
 		default:
-			return oldName;
+			return utils.normalizeName(oldName);
 	}	
 }
 
