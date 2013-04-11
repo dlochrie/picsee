@@ -1,6 +1,6 @@
 {
   "name": "picsee",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "Daniel Lochrie",
   "description": "Node middleware for Photo Management and Image Uploading, ExpressJS Compatible.",
   "engines": {
