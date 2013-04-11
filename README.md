@@ -3,20 +3,16 @@ picsee
 
 ##Description  
 Express-Compatible middleware that offers support for uploading photos, setting custom sizes, and 
-storing them locally or remotely.  
-
-_Coming Soon_: API also offers RESTful support for photo uploads, photo retrieval, 
-and gallery management.
+storing them locally or remotely. API includes mechanism for cropping and resizing photos as well. 
 
 ##Goals
 
 * Provide a RESTFul interface that allows for photos to be uploaded safely to your app
 * Be as lightweight as possible, so that you can use whatever ORM/DB/Store you want
 * Offer a way to easily set desired sizes for your photo uploads through the conf.
-* Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
+* [[Soon]] Offer support for Amazon S3 Storage  
+* [[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
 in a gallery.
-* Hopefully offer support for Amazon S3 storage
-* Hopefully offer support for client-side image manipulation
 
 ##How it Works
 Picsee allows you to define _where_ and _how_ you want to save your photos. Using the GD library,
@@ -56,6 +52,8 @@ a "jpg", "png", or "gif".
 
 ### Prerequisite: GD  
 
+_Picsee currently only supports `GD`._
+
 You will need to have GD installed so that `node-gd` (a dependency) can compile. Please have GD installed first.
 
 #### GD on Mac  
@@ -73,8 +71,11 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 
 *Options*:  
 
+ * docRoot - root path to your images, ie /path/app/public/images/
+ * urlRoot - base URL to view your images when they are uploaded
  * stagingDir - sandboxed (temporary) directory for uploading photos
  * processDir - directory to save processed photo(s)
+ * uploadDir - permanent directory for saved photo(s)
  * versions - versions of photos with width and height option
     * Format: `{ "version name": { w: 200, h: 200 } }`. 
  * separator - character to use when concatenating file names, ie 
@@ -87,6 +88,10 @@ or store each file in a different directory named after the version
     * date
     * original
     * custom
+ * maxSize - [under construction] Max Size (in KB) allowed
+ * jpgQlty - Quality of Jpg (Up to 100, 100 being Highest)
+ * gifQlty = Quality of Gif (Up to 100, 100 being Highest)
+ * pngQlty = Quality of Png (Up to 10, 10 being Highest)
  * inputFields - given a form with multiple inputs, which input(s) contain a photo?
    * Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. 
 You can add as many as you want, and Picsee will process them all. 
@@ -114,8 +119,8 @@ it won't make it into your application's photo location.
 
 ####Configure
     app.configure(function (){
+      // Set up your options first
       app.use(picsee.initialize(options));
-      // Call picsee before you set your routes
       app.use(app.router);
     });
 
@@ -123,14 +128,7 @@ it won't make it into your application's photo location.
 Picsee requires that any directory you are uploading to _exists_ and is _writeable_ by _Node_ or whatever user is running the app. 
 
 ####Usage with Express
-    app.post('/upload', function(req, res, next) { 
-      picsee.upload(req, res, function(err, results) { 
-        if (err) { // Handle error... }
-        res.render('index', { title: 'Upload Complete', results: results });
-      })
-    })
 
-###Demo App
 See: [pisee-looksee](https://github.com/dlochrie/picsee-looksee).
 
 
@@ -144,8 +142,3 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-
-
-

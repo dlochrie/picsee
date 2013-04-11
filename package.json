@@ -25,12 +25,7 @@
   },
   "devDependencies": {},
   "keywords": [
-    "picsee",
-    "image",
-    "manager",
-    "uploader",
-    "photo",
-    "cropper"
+    "picsee", "image", "manager", "uploader", "photo", "cropper", "cropping", "photo manipulation", "gd"
   ],
   "license": "MIT"
 }
