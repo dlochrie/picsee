@@ -18,7 +18,7 @@
 
       <header>
         <h1>Picsee</h1>
-        <p>Easy Photo Management for NodeJS, Express.</p>
+        <p>Easy Photo Management, Cropping, and Manipulation for NodeJS, Express.</p>
       </header>
 
       <div id="banner">
@@ -44,10 +44,7 @@
 <h2>Description</h2>
 
 <p>Express-Compatible middleware that offers support for uploading photos, setting custom sizes, and 
-storing them locally or remotely.  </p>
-
-<p><em>Coming Soon</em>: API also offers RESTful support for photo uploads, photo retrieval, 
-and gallery management.</p>
+storing them locally or remotely. API includes mechanism for cropping and resizing photos as well. </p>
 
 <h2>Goals</h2>
 
@@ -55,10 +52,10 @@ and gallery management.</p>
 <li>Provide a RESTFul interface that allows for photos to be uploaded safely to your app</li>
 <li>Be as lightweight as possible, so that you can use whatever ORM/DB/Store you want</li>
 <li>Offer a way to easily set desired sizes for your photo uploads through the conf.</li>
-<li>Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
+<li>[[Soon]] Offer support for Amazon S3 Storage<br>
+</li>
+<li>[[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
 in a gallery.</li>
-<li>Hopefully offer support for Amazon S3 storage</li>
-<li>Hopefully offer support for client-side image manipulation</li>
 </ul><h2>How it Works</h2>
 
 <p>Picsee allows you to define <em>where</em> and <em>how</em> you want to save your photos. Using the GD library,
@@ -89,11 +86,11 @@ going to want 3 versions of the photo:  </p>
 
 <ul>
 <li>
-<em><em>date</em></em>: 1365215413_thmb.jpg, 1365215413_med.jpg, 1365215413_lrg.jpg</li>
+<strong><em>date</em></strong>: 1365215413_thmb.jpg, 1365215413_med.jpg, 1365215413_lrg.jpg</li>
 <li>
-<em><em>original</em></em>: GradPhotos-0001-05-03-1977_thmb.jpg, etc</li>
+<strong><em>original</em></strong>: GradPhotos-0001-05-03-1977_thmb.jpg, etc</li>
 <li>
-<em><em>custom</em></em>: <em>Coming Soon</em>
+<strong><em>custom</em></strong>: <em>Coming Soon</em>
 </li>
 </ul><p>Don't like underscores? Change the <code>separator</code> option.</p>
 
@@ -107,6 +104,8 @@ a "jpg", "png", or "gif". </p>
 </code></pre>
 
 <h3>Prerequisite: GD</h3>
+
+<p><em>Picsee currently only supports <code>GD</code>.</em></p>
 
 <p>You will need to have GD installed so that <code>node-gd</code> (a dependency) can compile. Please have GD installed first.</p>
 
@@ -128,25 +127,51 @@ a "jpg", "png", or "gif". </p>
 
 <h4>Define Options</h4>
 
-<p><em>Options</em>:</p>
+<p><em>Options</em>:  </p>
 
 <ul>
-<li>stagingDir - sandboxed directory for uploading photo</li>
+<li>docRoot - root path to your images, ie /path/app/public/images/</li>
+<li>urlRoot - base URL to view your images when they are uploaded</li>
+<li>stagingDir - sandboxed (temporary) directory for uploading photos</li>
 <li>processDir - directory to save processed photo(s)</li>
-<li>versions - versions of photos with width and height option</li>
+<li>uploadDir - permanent directory for saved photo(s)</li>
+<li>versions - versions of photos with width and height option
+
+<ul>
+<li>Format: <code>{ "version name": { w: 200, h: 200 } }</code>. </li>
+</ul>
+</li>
 <li>separator - character to use when concatenating file names, ie 
 <code>filename_thumb</code> where <em>filename</em> is the original filename, and <em>thumb</em> is the 
 name of the version. <code>-</code> or <code>_</code> should work.</li>
 <li>directories [under construction] - convention for storing files, 
 ie use one directory and name files with versions attached, 
 or store each file in a different directory named after the version</li>
-<li>namingConvention - how to name files?</li>
-<li>inputFields - given a form with multiple inputs, which input(s) contain a photo?</li>
+<li>namingConvention - how to name files?
+
+<ul>
+<li>date</li>
+<li>original</li>
+<li>custom</li>
+</ul>
+</li>
+<li>maxSize - [under construction] Max Size (in KB) allowed</li>
+<li>jpgQlty - Quality of Jpg (Up to 100, 100 being Highest)</li>
+<li>gifQlty = Quality of Gif (Up to 100, 100 being Highest)</li>
+<li>pngQlty = Quality of Png (Up to 10, 10 being Highest)</li>
+<li>inputFields - given a form with multiple inputs, which input(s) contain a photo?
+
+<ul>
+<li>Ex: <code>&lt;input type="file" name="profile_photo" /&gt;</code> will require that you add <code>profile_photo</code> to the array of input fields. 
+You can add as many as you want, and Picsee will process them all. </li>
+</ul>
+</li>
 </ul><p><em>Example Usage</em>:</p>
 
-<pre><code>var options = {
-  stagingDir: staging,
-  processDir: processing,
+<pre><code>var docroot = '/var/www/myproject/';
+var options = {
+  stagingDir: '/full/path/outside/of/project',
+  processDir: docroot + 'public/photos/,
   versions: [  
     { "thmb": { w: 32, h: 32 } },   
     { "profile": { w: 200, h: null } },  
@@ -159,11 +184,15 @@ or store each file in a different directory named after the version</li>
 }
 </code></pre>
 
+<p><em>NOTE</em>: For security purposes, where you put the <code>stagingDir</code> is important. It is in the staging directory 
+that the file is being validated as a real file, and its mime-type is checked. If it does not pass validation,
+it won't make it into your application's photo location. </p>
+
 <h4>Configure</h4>
 
 <pre><code>app.configure(function (){
+  // Set up your options first
   app.use(picsee.initialize(options));
-  // Call picsee before you set your routes
   app.use(app.router);
 });
 </code></pre>
@@ -173,16 +202,6 @@ or store each file in a different directory named after the version</li>
 <p>Picsee requires that any directory you are uploading to <em>exists</em> and is <em>writeable</em> by <em>Node</em> or whatever user is running the app. </p>
 
 <h4>Usage with Express</h4>
-
-<pre><code>app.post('/upload', function(req, res, next) { 
-  picsee.upload(req, res, function(err, results) { 
-    if (err) { // Handle error... }
-    res.render('index', { title: 'Upload Complete', results: results });
-  })
-})
-</code></pre>
-
-<h3>Demo App</h3>
 
 <p>See: <a href="https://github.com/dlochrie/picsee-looksee">pisee-looksee</a>.</p>
 
