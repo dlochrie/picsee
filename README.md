@@ -10,7 +10,7 @@ storing them locally or remotely. API includes mechanism for cropping and resizi
 * Provide a RESTFul interface that allows for photos to be uploaded safely to your app
 * Be as lightweight as possible, so that you can use whatever ORM/DB/Store you want
 * Offer a way to easily set desired sizes for your photo uploads through the conf.
-* [[Soon]] Offer support for Amazon S3 Storage  
+* [[Soon]] Offer support for Amazon S3 Storage
 * [[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
 in a gallery.
 
@@ -20,7 +20,7 @@ Picsee resizes your photo and saves it according to your specifications.
 
 ###Typical Use Case: Profile Photo
 If you are creating a form where your user is uploading a profile photo, you are most-likely
-going to want 3 versions of the photo:  
+going to want 3 versions of the photo:
 
 * Small
 * Medium
@@ -30,7 +30,7 @@ You name them, _thmb_, _med_, and _lrg_ and your team/company/UI/UX/etc determin
 
 * **thmb** = 32x32
 * **med** = 200x[whatever]
-* **lrg** = 800x[whatever]  
+* **lrg** = 800x[whatever] 
 
 So, your thmb will be scaled and saved to 32*32, and your _med_ will be rescaled so that it is 200 pixels wide by whatever height is proportional to the original.
 
@@ -71,30 +71,80 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 
 *Options*:  
 
- * docRoot - root path to your images, ie /path/app/public/images/
- * urlRoot - base URL to view your images when they are uploaded
- * stagingDir - sandboxed (temporary) directory for uploading photos
- * processDir - directory to save processed photo(s)
- * uploadDir - permanent directory for saved photo(s)
- * versions - versions of photos with width and height option
-    * Format: `{ "version name": { w: 200, h: 200 } }`. 
- * separator - character to use when concatenating file names, ie 
+<table>
+  <tbody>
+  <tr>
+    <th>docRoot</th>
+    <td>root path to your images, ie /path/app/public/images/</td>
+  </tr>
+  <tr>
+    <th>urlRoot</th>
+    <td>base URL to view your images when they are uploaded</td>
+  </tr>
+  <tr>
+    <th>stagingDir</th>
+    <td>sandboxed (temporary) directory for uploading photos</td>
+  </tr>
+  <tr>
+    <th>processDir</th>
+    <td>directory to save processed photo(s)</td>
+  </tr>
+  <tr>
+    <th>uploadDir</th>
+    <td>permanent directory for saved photo(s)</td>
+  </tr>
+  <tr>
+    <th>originalDir</th>
+    <td>location of where the original is stored, if this option is omitted, or set to false, then originals will not be stored</td>
+  </tr>
+  <tr>
+    <th>versions</th>
+    <td>versions of photos with width and height option   
+* Format: `{ "version name": { w: 200, h: 200 } }`.</td>
+  </tr>
+  <tr>
+    <th>separator</th>
+    <td>character to use when concatenating file names, ie 
 `filename_thumb` where _filename_ is the original filename, and _thumb_ is the 
-name of the version. `-` or `_` should work.
- * directories [under construction] - convention for storing files, 
-ie use one directory and name files with versions attached, 
-or store each file in a different directory named after the version
- * namingConvention - how to name files?
+name of the version. `-` or `_` should work.</td>
+  </tr>
+  <tr>
+    <th>directories [under construction]</th>
+    <td>Convention for storing files, 
+i.e., use one directory and name files with versions attached, 
+or store each file in a different directory named after the version?</td>
+  </tr>
+  <tr>
+    <th>namingConvention</th>
+    <td>how to name files?
     * date
     * original
-    * custom
- * maxSize - [under construction] Max Size (in KB) allowed
- * jpgQlty - Quality of Jpg (Up to 100, 100 being Highest)
- * gifQlty = Quality of Gif (Up to 100, 100 being Highest)
- * pngQlty = Quality of Png (Up to 10, 10 being Highest)
- * inputFields - given a form with multiple inputs, which input(s) contain a photo?
-   * Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. 
-You can add as many as you want, and Picsee will process them all. 
+    * custom</td>
+  </tr>
+  <tr>
+    <th>maxSize</th>
+    <td>Max Size (in KB) allowed</td>
+  </tr>
+  <tr>
+    <th>jpgQlty</th>
+    <td>Quality of Jpg (Up to 100, 100 being Highest)</td>
+  </tr>
+  <tr>
+    <th>gifQlty</th>
+    <td>Quality of Gif (Up to 100, 100 being Highest)</td>
+  </tr>
+  <tr>
+    <th>pngQlty</th>
+    <td>Quality of Png (Up to 10, 10 being Highest)</td>
+  </tr>
+  <tr>
+    <th>inputFields</th>
+    <td>Given a form with multiple inputs, which input(s) contain a photo?  
+Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. 
+You can add as many as you want, and Picsee will process them all.</td> 
+  </tr>
+  </tbody>
+</table>
 
 *Example Usage*:
 
