@@ -15,7 +15,7 @@ var MIMES_ALLOWED = [
 ];
 
 /**
- * Instatiate Picsee Object, force New.
+ * Picsee Constructor
  */
 function Picsee () {
 	if (!(this instanceof Picsee)) {
@@ -38,6 +38,7 @@ Picsee.prototype.initialize = function (opts) {
 	self._stagingDir = opts.stagingDir || false;
 	self._processDir = opts.processDir || false;
 	self._uploadDir = opts.uploadDir || false;
+	self._originalDir = opts.originalDir || false;
 	self._versions = opts.versions || false;
 	self._separator = opts.separator || false;
 	self._directories = {};
@@ -63,7 +64,6 @@ Picsee.prototype.upload = function (req, res, cb) {
 		photos = [],
 		results = [];
 
-	// Add each approved input into the queue for processing 
 	for (var file in req.files) {
 		if (allowedInputs.indexOf(file) !== -1) {
 			photos.push(req.files[file]);
@@ -92,6 +92,7 @@ Picsee.prototype.upload = function (req, res, cb) {
  * (3) Either: 
  * -- (a) reject, based on mime and remove -or-
  * -- (b) send to process each version, and remove staging file
+ * (4) (Optionally) Stores the Original Photo
  *
  * @param {Object} image Object containing image from request.
  * @param {Function} cb Callback to run on completion.
@@ -106,10 +107,20 @@ Picsee.prototype.validate = function (image, cb) {
 		url = self._urlRoot + self._processDir + tmpName,
 		msg;
 	
+	/**
+	 * Set the original path. 
+	 * If the application wants to store originals, then save
+	 * the original after the MIME is checked and the file has
+	 * passed validation.
+	 */
+	var original = (self._originalDir) ? self._docRoot + self._originalDir + 
+		tmpName : false;
+
 	fs.readFile(image.path, function (err, data) {
 		if (err) return cb('Cannot read file: ' + oldName, null); 
 		if (image.size > self._maxSize) 
-			return cb('Image is too large: ' + oldName, null)
+			return cb('Image is too large: ' + oldName, null);
+
 		fs.writeFile(stagingPath, data, function (err) {
 			if (err) return cb('Cannot save file: ' + stagingPath, null);
 			var mime = utils.getMime(stagingPath);
@@ -119,6 +130,7 @@ Picsee.prototype.validate = function (image, cb) {
 						msg = 'Cannot save file: ' + processPath;
 						return utils.removeImage(stagingPath, msg, cb);
 					}
+					if (original) { fs.writeFileSync(original, data); }
 					utils.removeImage(stagingPath, null, function () {
 						var dims = utils.getRealDimensions(processPath, mime);
 						return cb(null, { name: tmpName, path: processPath, url: url, 
@@ -305,6 +317,21 @@ Picsee.prototype.resizeTo = function (opts, cb) {
 			break;
 	}
 }
+
+
+/**
+ * Returns the full-path to the Original Photo
+ *
+ * @param {String} filename
+ */
+Picsee.prototype.getOriginal = function (filename) {
+	return {
+		name: filename,
+		path: this._docRoot + this._originalDir + filename,
+		url: this._urlRoot + this._originalDir + filename
+	}
+}
+
 
 exports = module.exports = new Picsee();
 exports.Picsee = Picsee;
