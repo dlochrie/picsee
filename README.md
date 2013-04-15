@@ -69,84 +69,25 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 
 ####Define Options
 
-*Options*:  
+| Option     | Description  |
+| :--------------| :------------ |
+| `docRoot` | root path to your images, ie /path/app/public/images/
+| `urlRoot` | base URL to view your images when they are uploaded
+| `stagingDir` | sandboxed (temporary) directory for uploading photos
+| `processDir` | directory to save processed photo(s)
+| `uploadDir` | permanent directory for saved photo(s)
+| `originalDir` | location of where the original is stored, if this option is omitted, or set to false, then originals will not be stored
+| `versions` | versions of photos with width and height option * Format: `{ "version name": { w: 200, h: 200 } }`.
+| `separator` | character to use when concatenating file names, ie `filename_thumb` where _filename_ is the original filename, and _thumb_ is the name of the version. `-` or `_` should work.
+| `directories` [under construction] | Convention for storing files, i.e., use one directory and name files with versions attached, or store each file in a different directory named after the version?
+| `namingConvention` | how to name files? * date * original * custom
+| `maxSize` | Max Size (in KB) allowed
+| `jpgQlty` | Quality of Jpg (Up to 100, 100 being Highest)
+| `gifQlty` | Quality of Gif (Up to 100, 100 being Highest)
+| `pngQlty` | Quality of Png (Up to 10, 10 being Highest)
+| `inputFields` | Given a form with multiple inputs, which input(s) contain a photo?  Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. You can add as many as you want, and Picsee will process them all.
 
-<table>
-  <tbody>
-  <tr>
-    <th>docRoot</th>
-    <td>root path to your images, ie /path/app/public/images/</td>
-  </tr>
-  <tr>
-    <th>urlRoot</th>
-    <td>base URL to view your images when they are uploaded</td>
-  </tr>
-  <tr>
-    <th>stagingDir</th>
-    <td>sandboxed (temporary) directory for uploading photos</td>
-  </tr>
-  <tr>
-    <th>processDir</th>
-    <td>directory to save processed photo(s)</td>
-  </tr>
-  <tr>
-    <th>uploadDir</th>
-    <td>permanent directory for saved photo(s)</td>
-  </tr>
-  <tr>
-    <th>originalDir</th>
-    <td>location of where the original is stored, if this option is omitted, or set to false, then originals will not be stored</td>
-  </tr>
-  <tr>
-    <th>versions</th>
-    <td>versions of photos with width and height option   
-* Format: `{ "version name": { w: 200, h: 200 } }`.</td>
-  </tr>
-  <tr>
-    <th>separator</th>
-    <td>character to use when concatenating file names, ie 
-`filename_thumb` where _filename_ is the original filename, and _thumb_ is the 
-name of the version. `-` or `_` should work.</td>
-  </tr>
-  <tr>
-    <th>directories [under construction]</th>
-    <td>Convention for storing files, 
-i.e., use one directory and name files with versions attached, 
-or store each file in a different directory named after the version?</td>
-  </tr>
-  <tr>
-    <th>namingConvention</th>
-    <td>how to name files?
-    * date
-    * original
-    * custom</td>
-  </tr>
-  <tr>
-    <th>maxSize</th>
-    <td>Max Size (in KB) allowed</td>
-  </tr>
-  <tr>
-    <th>jpgQlty</th>
-    <td>Quality of Jpg (Up to 100, 100 being Highest)</td>
-  </tr>
-  <tr>
-    <th>gifQlty</th>
-    <td>Quality of Gif (Up to 100, 100 being Highest)</td>
-  </tr>
-  <tr>
-    <th>pngQlty</th>
-    <td>Quality of Png (Up to 10, 10 being Highest)</td>
-  </tr>
-  <tr>
-    <th>inputFields</th>
-    <td>Given a form with multiple inputs, which input(s) contain a photo?  
-Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. 
-You can add as many as you want, and Picsee will process them all.</td> 
-  </tr>
-  </tbody>
-</table>
-
-*Example Usage*:
+#####Example Usage
 
     var docroot = '/var/www/myproject/';
     var options = {
@@ -163,9 +104,9 @@ You can add as many as you want, and Picsee will process them all.</td>
       inputFields: ['profPhoto', 'other']
     }
 
-*NOTE*: For security purposes, where you put the `stagingDir` is important. It is in the staging directory 
-that the file is being validated as a real file, and its mime-type is checked. If it does not pass validation,
-it won't make it into your application's photo location. 
+> *NOTE*: For security purposes, where you put the `stagingDir` is important. It is in the staging directory 
+> that the file is being validated as a real file, and its mime-type is checked. If it does not pass validation,
+> it won't make it into your application's photo location. 
 
 ####Configure
     app.configure(function (){
