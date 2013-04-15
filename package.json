@@ -1,8 +1,8 @@
 {
   "name": "picsee",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": "Daniel Lochrie",
-  "description": "Node middleware for Photo Management and Image Uploading, ExpressJS Compatible.",
+  "description": "Node middleware for Photo Management, Image Cropping, and Uploading, ExpressJS Compatible.",
   "engines": {
     "node": ">= 0.0.8"
   },
@@ -26,7 +26,7 @@
   "devDependencies": {},
   "keywords": [
     "picsee", "image", "image manager", "image uploader", "photo upload", 
-		"cropper", "cropping", "photo manipulation", "gd"
+		"cropper", "cropping", "photo manipulation", "gd", "node-gd"
   ],
   "license": "MIT"
 }
