@@ -4,40 +4,31 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>Picsee by dlochrie</title>
+
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/main.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <script src="javascripts/scale.fix.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
   </head>
   <body>
-
-      <header>
-        <h1>Picsee</h1>
-        <p>Easy Photo Management, Cropping, and Manipulation for NodeJS, Express.</p>
-      </header>
-
-      <div id="banner">
-        <span id="logo"></span>
-
-        <a href="https://github.com/dlochrie/picsee" class="button fork"><strong>View On GitHub</strong></a>
-        <div class="downloads">
-          <span>Downloads:</span>
-          <ul>
-            <li><a href="https://github.com/dlochrie/picsee/zipball/master" class="button">ZIP</a></li>
-            <li><a href="https://github.com/dlochrie/picsee/tarball/master" class="button">TAR</a></li>
-          </ul>
-        </div>
-      </div><!-- end banner -->
-
     <div class="wrapper">
-      <nav>
-        <ul></ul>
-      </nav>
+      <header>
+        <h1 class="header">Picsee</h1>
+        <p class="header">Easy Photo Management, Cropping, and Manipulation for NodeJS, Express.</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/dlochrie/picsee/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/dlochrie/picsee/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/dlochrie/picsee">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/dlochrie">dlochrie</a></p>
+
+
+      </header>
       <section>
         <h1>picsee</h1>
 
@@ -52,8 +43,7 @@ storing them locally or remotely. API includes mechanism for cropping and resizi
 <li>Provide a RESTFul interface that allows for photos to be uploaded safely to your app</li>
 <li>Be as lightweight as possible, so that you can use whatever ORM/DB/Store you want</li>
 <li>Offer a way to easily set desired sizes for your photo uploads through the conf.</li>
-<li>[[Soon]] Offer support for Amazon S3 Storage<br>
-</li>
+<li>[[Soon]] Offer support for Amazon S3 Storage</li>
 <li>[[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
 in a gallery.</li>
 </ul><h2>How it Works</h2>
@@ -64,7 +54,7 @@ Picsee resizes your photo and saves it according to your specifications.</p>
 <h3>Typical Use Case: Profile Photo</h3>
 
 <p>If you are creating a form where your user is uploading a profile photo, you are most-likely
-going to want 3 versions of the photo:  </p>
+going to want 3 versions of the photo:</p>
 
 <ul>
 <li>Small</li>
@@ -78,8 +68,7 @@ going to want 3 versions of the photo:  </p>
 <li>
 <strong>med</strong> = 200x[whatever]</li>
 <li>
-<strong>lrg</strong> = 800x[whatever]<br>
-</li>
+<strong>lrg</strong> = 800x[whatever] </li>
 </ul><p>So, your thmb will be scaled and saved to 32*32, and your <em>med</em> will be rescaled so that it is 200 pixels wide by whatever height is proportional to the original.</p>
 
 <p>Your photos are saved according to whatever naming conventions you provide:</p>
@@ -127,46 +116,73 @@ a "jpg", "png", or "gif". </p>
 
 <h4>Define Options</h4>
 
-<p><em>Options</em>:  </p>
-
-<ul>
-<li>docRoot - root path to your images, ie /path/app/public/images/</li>
-<li>urlRoot - base URL to view your images when they are uploaded</li>
-<li>stagingDir - sandboxed (temporary) directory for uploading photos</li>
-<li>processDir - directory to save processed photo(s)</li>
-<li>uploadDir - permanent directory for saved photo(s)</li>
-<li>versions - versions of photos with width and height option
-
-<ul>
-<li>Format: <code>{ "version name": { w: 200, h: 200 } }</code>. </li>
-</ul>
-</li>
-<li>separator - character to use when concatenating file names, ie 
-<code>filename_thumb</code> where <em>filename</em> is the original filename, and <em>thumb</em> is the 
-name of the version. <code>-</code> or <code>_</code> should work.</li>
-<li>directories [under construction] - convention for storing files, 
-ie use one directory and name files with versions attached, 
-or store each file in a different directory named after the version</li>
-<li>namingConvention - how to name files?
-
-<ul>
-<li>date</li>
-<li>original</li>
-<li>custom</li>
-</ul>
-</li>
-<li>maxSize - [under construction] Max Size (in KB) allowed</li>
-<li>jpgQlty - Quality of Jpg (Up to 100, 100 being Highest)</li>
-<li>gifQlty = Quality of Gif (Up to 100, 100 being Highest)</li>
-<li>pngQlty = Quality of Png (Up to 10, 10 being Highest)</li>
-<li>inputFields - given a form with multiple inputs, which input(s) contain a photo?
-
-<ul>
-<li>Ex: <code>&lt;input type="file" name="profile_photo" /&gt;</code> will require that you add <code>profile_photo</code> to the array of input fields. 
-You can add as many as you want, and Picsee will process them all. </li>
-</ul>
-</li>
-</ul><p><em>Example Usage</em>:</p>
+<table>
+<tr>
+<th align="left">Option</th>
+<th align="left">Description</th>
+</tr>
+<tr>
+<td align="left"><code>docRoot</code></td>
+<td align="left">root path to your images, ie /path/app/public/images/</td>
+</tr>
+<tr>
+<td align="left"><code>urlRoot</code></td>
+<td align="left">base URL to view your images when they are uploaded</td>
+</tr>
+<tr>
+<td align="left"><code>stagingDir</code></td>
+<td align="left">sandboxed (temporary) directory for uploading photos</td>
+</tr>
+<tr>
+<td align="left"><code>processDir</code></td>
+<td align="left">directory to save processed photo(s)</td>
+</tr>
+<tr>
+<td align="left"><code>uploadDir</code></td>
+<td align="left">permanent directory for saved photo(s)</td>
+</tr>
+<tr>
+<td align="left"><code>originalDir</code></td>
+<td align="left">location of where the original is stored, if this option is omitted, or set to false, then originals will not be stored</td>
+</tr>
+<tr>
+<td align="left"><code>versions</code></td>
+<td align="left">versions of photos with width and height option * Format: <code>{ "version name": { w: 200, h: 200 } }</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>separator</code></td>
+<td align="left">character to use when concatenating file names, ie <code>filename_thumb</code> where <em>filename</em> is the original filename, and <em>thumb</em> is the name of the version. <code>-</code> or <code>_</code> should work.</td>
+</tr>
+<tr>
+<td align="left">
+<code>directories</code> [under construction]</td>
+<td align="left">Convention for storing files, i.e., use one directory and name files with versions attached, or store each file in a different directory named after the version?</td>
+</tr>
+<tr>
+<td align="left"><code>namingConvention</code></td>
+<td align="left">how to name files? * date * original * custom</td>
+</tr>
+<tr>
+<td align="left"><code>maxSize</code></td>
+<td align="left">Max Size (in KB) allowed</td>
+</tr>
+<tr>
+<td align="left"><code>jpgQlty</code></td>
+<td align="left">Quality of Jpg (Up to 100, 100 being Highest)</td>
+</tr>
+<tr>
+<td align="left"><code>gifQlty</code></td>
+<td align="left">Quality of Gif (Up to 100, 100 being Highest)</td>
+</tr>
+<tr>
+<td align="left"><code>pngQlty</code></td>
+<td align="left">Quality of Png (Up to 10, 10 being Highest)</td>
+</tr>
+<tr>
+<td align="left"><code>inputFields</code></td>
+<td align="left">Given a form with multiple inputs, which input(s) contain a photo?  Ex: <code>&lt;input type="file" name="profile_photo" /&gt;</code> will require that you add <code>profile_photo</code> to the array of input fields. You can add as many as you want, and Picsee will process them all.</td>
+</tr>
+</table><h5>Example Usage</h5>
 
 <pre><code>var docroot = '/var/www/myproject/';
 var options = {
@@ -184,9 +200,11 @@ var options = {
 }
 </code></pre>
 
+<blockquote>
 <p><em>NOTE</em>: For security purposes, where you put the <code>stagingDir</code> is important. It is in the staging directory 
 that the file is being validated as a real file, and its mime-type is checked. If it does not pass validation,
 it won't make it into your application's photo location. </p>
+</blockquote>
 
 <h4>Configure</h4>
 
@@ -218,12 +236,11 @@ it won't make it into your application's photo location. </p>
 <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
       </section>
       <footer>
-        <p>Project maintained by <a href="https://github.com/dlochrie">dlochrie</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></small></p>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
       </footer>
     </div>
     <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-              <script type="text/javascript">
+		          <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
             document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
           </script>
