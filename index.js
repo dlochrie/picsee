@@ -113,14 +113,12 @@ Picsee.prototype.validate = function (image, cb) {
 	 * the original after the MIME is checked and the file has
 	 * passed validation.
 	 */
-	var original = (self._originalDir) ? self._docRoot + self._originalDir + 
-		tmpName : false;
+	var keepOriginal = (self._originalDir) ? true : false;
 
 	fs.readFile(image.path, function (err, data) {
 		if (err) return cb('Cannot read file: ' + oldName, null); 
 		if (image.size > self._maxSize) 
 			return cb('Image is too large: ' + oldName, null);
-
 		fs.writeFile(stagingPath, data, function (err) {
 			if (err) return cb('Cannot save file: ' + stagingPath, null);
 			var mime = utils.getMime(stagingPath);
@@ -130,11 +128,17 @@ Picsee.prototype.validate = function (image, cb) {
 						msg = 'Cannot save file: ' + processPath;
 						return utils.removeImage(stagingPath, msg, cb);
 					}
-					if (original) { fs.writeFileSync(original, data); }
 					utils.removeImage(stagingPath, null, function () {
 						var dims = utils.getRealDimensions(processPath, mime);
-						return cb(null, { name: tmpName, path: processPath, url: url, 
-							w: dims.w, h: dims.h  });
+						if (keepOriginal) {
+							self.saveOriginal(oldName, data, function(err, original) {
+								return cb(null, { name: tmpName, path: processPath, url: url, 
+									original: original, w: dims.w, h: dims.h  });
+							});
+						} else {
+							return cb(null, { name: tmpName, path: processPath, url: url, 
+								original: original, w: dims.w, h: dims.h  });
+						}
 					});
 				});
 			} else {
@@ -142,6 +146,22 @@ Picsee.prototype.validate = function (image, cb) {
 				return utils.removeImage(stagingPath, msg, cb);
 			}
 		});
+	});
+}
+
+/**
+ * @param {String} filename Original name of uploaded file.
+ * @param {String} data Binary Data of file to save.
+ * @param {Function} cb Callback Function
+ */
+Picsee.prototype.saveOriginal = function (filename, data, cb) {
+	var self = this,
+		newName = utils.renameOriginal(filename),
+		path = self._docRoot + self._originalDir + newName,
+		url = self._urlRoot + self._originalDir + newName;
+	fs.writeFile(path, data, function (err) {
+		if (err) return cb('Cannot save original:' + path, null);
+		return cb(null, { name: newName, path: path, url: url});
 	});
 }
 
@@ -262,7 +282,6 @@ Picsee.prototype.cropPng = function (image, opts, cb) {
 		}
 		self.process(opts, cb); 
 	});
-
 }
 
 /** 
@@ -318,20 +337,22 @@ Picsee.prototype.resizeTo = function (opts, cb) {
 	}
 }
 
-
 /**
  * Returns the full-path to the Original Photo
  *
  * @param {String} filename
  */
 Picsee.prototype.getOriginal = function (filename) {
+	var self = this,
+		original = (filename) ? filename : false;
+
+	if (!original) return {};
 	return {
-		name: filename,
-		path: this._docRoot + this._originalDir + filename,
-		url: this._urlRoot + this._originalDir + filename
+		name: original, 
+		path: self._docRoot + self._originalDir + original,
+		url: self._urlRoot + self._originalDir + original
 	}
 }
-
 
 exports = module.exports = new Picsee();
 exports.Picsee = Picsee;
