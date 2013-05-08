@@ -14,6 +14,11 @@ storing them locally or remotely. API includes mechanism for cropping and resizi
 * [[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
 in a gallery.
 
+##Notes
+
+* Png's work, but transparent pngs don't yet.
+* Gifs are currently unsupported.
+
 ##How it Works
 Picsee allows you to define _where_ and _how_ you want to save your photos. Using the GD library,
 Picsee resizes your photo and saves it according to your specifications.
