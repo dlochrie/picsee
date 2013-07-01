@@ -14,11 +14,6 @@ storing them locally or remotely. API includes mechanism for cropping and resizi
 * [[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos
 in a gallery.
 
-##Notes
-
-* Png's work, but transparent pngs don't yet.
-* Gifs are currently unsupported.
-
 ##How it Works
 Picsee allows you to define _where_ and _how_ you want to save your photos. Using the GD library,
 Picsee resizes your photo and saves it according to your specifications.
@@ -50,6 +45,22 @@ Don't like underscores? Change the `separator` option.
 Before your photos are saved, the original is moved to a `staging` directory, 
 which you define. Here the Mime type is checked, and it is rejected if it is not
 a "jpg", "png", or "gif". 
+
+Directories
+Directories option "single" will place all images inside the uploaded folder.
+Directories option "version" will place all images in corresponding subdirectories that must be corrected under the upload directory.
+For example, given /upload directory and thmb, med, lrg options defined, the user shall need to create /upload/thmb /upload/med /upload/lrg
+At which point all cropped images will save as /upload/thmb/filename.filetype instead of separating by _thmb that part is done with the sub directories.
+
+renameOrigImage
+Boolean option 
+Use with date naming convention.
+that instead of just passing the original filename through the normalizer will append the date at the end.
+The dates for all cropped files will then match up with the original to allow for file tracking.
+Example:
+uploading myimage.jpg will generate myimage_12345.jpg
+All subsequent images will then start with 12345
+
 
 ## Install
 
@@ -84,13 +95,14 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 | `originalDir` | location of where the original is stored, if this option is omitted, or set to false, then originals will not be stored
 | `versions` | versions of photos with width and height option * Format: `{ "version name": { w: 200, h: 200 } }`.
 | `separator` | character to use when concatenating file names, ie `filename_thumb` where _filename_ is the original filename, and _thumb_ is the name of the version. `-` or `_` should work.
-| `directories` [under construction] | Convention for storing files, i.e., use one directory and name files with versions attached, or store each file in a different directory named after the version?
+| `directories` | Convention for storing files, i.e., use one directory and name files with versions attached, or store each file in a different directory named after the version? * single * version 
 | `namingConvention` | how to name files? * date * original * custom
 | `maxSize` | Max Size (in KB) allowed
 | `jpgQlty` | Quality of Jpg (Up to 100, 100 being Highest)
 | `gifQlty` | Quality of Gif (Up to 100, 100 being Highest)
 | `pngQlty` | Quality of Png (Up to 10, 10 being Highest)
 | `inputFields` | Given a form with multiple inputs, which input(s) contain a photo?  Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. You can add as many as you want, and Picsee will process them all.
+| `renameOrigImage` | Use with date naming convention, boolean to append date at the end of the file. This will allow mapping to the created images
 
 #####Example Usage
 
@@ -106,6 +118,7 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
       separator: '_',  
       directories: 'single',
       namingConvention: 'date',
+	  renameOrigImage: false,
       inputFields: ['profPhoto', 'other']
     }
 
