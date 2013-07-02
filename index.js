@@ -1,26 +1,26 @@
 var fs = require('fs'),
-	path = require('path'),
-	gd = require('node-gd'), 
-	mime = require('mime'),
-	utils = require('./lib/utils');
+  path = require('path'),
+  gd = require('node-gd'), 
+  mime = require('mime'),
+  utils = require('./lib/utils');
 
 /**
  * Set allowed mime-types here. Currently, GD only
  * supports gif, jpg, and png
  */
 var MIMES_ALLOWED = [
-	"image/gif",
-	"image/jpeg",
-	"image/png"
+  "image/gif",
+  "image/jpeg",
+  "image/png"
 ];
 
 /**
  * Picsee Constructor
  */
 function Picsee () {
-	if (!(this instanceof Picsee)) {
-		return new Picsee();
-	}
+  if (!(this instanceof Picsee)) {
+    return new Picsee();
+  }
 }
 
 /**
@@ -31,26 +31,26 @@ function Picsee () {
  * @property {Array} _inputFields Named inputs that images will be uploaded from
  */
 Picsee.prototype.initialize = function (opts) {
-	var self = this;
-	opts = opts || {};
-	self._docRoot = opts.docRoot || false;
-	self._urlRoot = opts.urlRoot || false;
-	self._stagingDir = opts.stagingDir || false;
-	self._processDir = opts.processDir || false;
-	self._uploadDir = opts.uploadDir || false;
-	self._originalDir = opts.originalDir || false;
-	self._versions = opts.versions || false;
-	self._separator = opts.separator || false;
-	self._directories = opts.directories || false;
-	self._namingConvention = opts.namingConvention || false;
-	self._maxSize = utils.getMaxSize(opts.maxSize); 
-	self._jpgQlty = opts.jpgQlty || 80;
-	self._gifQlty = opts.gifQlty || 80;
-	self._pngQlty = opts.pngQlty || 9;
-	self._inputFields = opts.inputFields || [];
-	self._renameOrigImage = opts.renameOrigImage || false;
-	self._mime = '';
-	return self;
+  var self = this;
+  opts = opts || {};
+  self._docRoot = opts.docRoot || false;
+  self._urlRoot = opts.urlRoot || false;
+  self._stagingDir = opts.stagingDir || false;
+  self._processDir = opts.processDir || false;
+  self._uploadDir = opts.uploadDir || false;
+  self._originalDir = opts.originalDir || false;
+  self._versions = opts.versions || false;
+  self._separator = opts.separator || false;
+  self._directories = opts.directories || false;
+  self._namingConvention = opts.namingConvention || false;
+  self._maxSize = utils.getMaxSize(opts.maxSize); 
+  self._jpgQlty = opts.jpgQlty || 80;
+  self._gifQlty = opts.gifQlty || 80;
+  self._pngQlty = opts.pngQlty || 9;
+  self._inputFields = opts.inputFields || [];
+  self._renameOrigImage = opts.renameOrigImage || false;
+  self._mime = '';
+  return self;
 }
 
 /**
@@ -61,30 +61,30 @@ Picsee.prototype.initialize = function (opts) {
  * @param cb {Function} Callback method
  */
 Picsee.prototype.upload = function (req, res, cb) {
-	var self = this,
-		allowedInputs = self._inputFields, 
-		photos = [],
-		results = [];
-		
-	for (var file in req.files) {
-		if (allowedInputs.indexOf(file) !== -1) {
-			photos.push(req.files[file]);
-		}
-	}
-	
-	function validate(photo) {
-		if (photo) {
-			self.validate(photo, function (err, result) {
-				if (err) return cb(err, null);
-				results.push(result);
-				return validate(photos.shift());
-			});
-		} else {
-			return cb(null, results);
-		}
-	}
+  var self = this,
+    allowedInputs = self._inputFields, 
+    photos = [],
+    results = [];
+    
+  for (var file in req.files) {
+    if (allowedInputs.indexOf(file) !== -1) {
+      photos.push(req.files[file]);
+    }
+  }
+  
+  function validate(photo) {
+    if (photo) {
+      self.validate(photo, function (err, result) {
+        if (err) return cb(err, null);
+        results.push(result);
+        return validate(photos.shift());
+      });
+    } else {
+      return cb(null, results);
+    }
+  }
 
-	validate(photos.shift());
+  validate(photos.shift());
 }
 
 /**
@@ -100,55 +100,55 @@ Picsee.prototype.upload = function (req, res, cb) {
  * @param {Function} cb Callback to run on completion.
  */
 Picsee.prototype.validate = function (image, cb) {
-	var self = this,
-		oldName = image.name,
-		ext = utils.getFileExt(oldName),
-		tmpName = utils.renameForProcessing(oldName, ext),
-		stagingPath = self._stagingDir + tmpName,
-		processPath = self._docRoot + self._processDir + tmpName,
-		url = self._urlRoot + self._processDir + tmpName,
-		msg;
-	
-	/**
-	 * Set the original path. 
-	 * If the application wants to store originals, then save
-	 * the original after the MIME is checked and the file has
-	 * passed validation.
-	 */
-	var keepOriginal = (self._originalDir) ? true : false;
+  var self = this,
+    oldName = image.name,
+    ext = utils.getFileExt(oldName),
+    tmpName = utils.renameForProcessing(oldName, ext),
+    stagingPath = self._stagingDir + tmpName,
+    processPath = self._docRoot + self._processDir + tmpName,
+    url = self._urlRoot + self._processDir + tmpName,
+    msg;
+  
+  /**
+   * Set the original path. 
+   * If the application wants to store originals, then save
+   * the original after the MIME is checked and the file has
+   * passed validation.
+   */
+  var keepOriginal = (self._originalDir) ? true : false;
 
-	fs.readFile(image.path, function (err, data) {
-		if (err) return cb('Cannot read file: ' + oldName, null); 
-		if (image.size > self._maxSize) 
-			return cb('Image is too large: ' + oldName, null);
-		fs.writeFile(stagingPath, data, function (err) {
-			if (err) return cb(err + 'Cannot save file: ' + stagingPath, null);
-			var mime = utils.getMime(stagingPath);
-			if (MIMES_ALLOWED.indexOf(mime) !== -1) {
-				fs.writeFile(processPath, data, function (err) {
-					if (err) {
-						msg = 'Cannot save file: ' + processPath;
-						return utils.removeImage(stagingPath, msg, cb);
-					}
-					utils.removeImage(stagingPath, null, function () {
-						var dims = utils.getRealDimensions(processPath, mime);
-						if (keepOriginal) {
-							self.saveOriginal(oldName, data, function(err, original) {
-								return cb(null, { name: tmpName, path: processPath, url: url, 
-									original: original, w: dims.w, h: dims.h  });
-							});
-						} else {
-							return cb(null, { name: tmpName, path: processPath, url: url, 
-								original: original, w: dims.w, h: dims.h  });
-						}
-					});
-				});
-			} else {
-				msg = 'File is NOT an image: ' + oldName;
-				return utils.removeImage(stagingPath, msg, cb);
-			}
-		});
-	});
+  fs.readFile(image.path, function (err, data) {
+    if (err) return cb('Cannot read file: ' + oldName, null); 
+    if (image.size > self._maxSize) 
+      return cb('Image is too large: ' + oldName, null);
+    fs.writeFile(stagingPath, data, function (err) {
+      if (err) return cb(err + 'Cannot save file: ' + stagingPath, null);
+      var mime = utils.getMime(stagingPath);
+      if (MIMES_ALLOWED.indexOf(mime) !== -1) {
+        fs.writeFile(processPath, data, function (err) {
+          if (err) {
+            msg = 'Cannot save file: ' + processPath;
+            return utils.removeImage(stagingPath, msg, cb);
+          }
+          utils.removeImage(stagingPath, null, function () {
+            var dims = utils.getRealDimensions(processPath, mime);
+            if (keepOriginal) {
+              self.saveOriginal(oldName, data, function(err, original) {
+                return cb(null, { name: tmpName, path: processPath, url: url, 
+                  original: original, w: dims.w, h: dims.h  });
+              });
+            } else {
+              return cb(null, { name: tmpName, path: processPath, url: url, 
+                original: original, w: dims.w, h: dims.h  });
+            }
+          });
+        });
+      } else {
+        msg = 'File is NOT an image: ' + oldName;
+        return utils.removeImage(stagingPath, msg, cb);
+      }
+    });
+  });
 }
 
 /**
@@ -157,14 +157,15 @@ Picsee.prototype.validate = function (image, cb) {
  * @param {Function} cb Callback Function
  */
 Picsee.prototype.saveOriginal = function (filename, data, cb) {
-	var self = this,
-		newName = utils.renameOriginal(filename, self._renameOrigImage, self._namingConvention, self._separator),
-		path = self._docRoot + self._originalDir + newName,
-		url = self._urlRoot + self._originalDir + newName;
-	fs.writeFile(path, data, function (err) {
-		if (err) return cb('Cannot save original:' + path, null);
-		return cb(null, { name: newName, path: path, url: url});
-	});
+  var self = this,
+    newName = utils.renameOriginal(filename, self._renameOrigImage, 
+        self._namingConvention, self._separator),
+    path = self._docRoot + self._originalDir + newName,
+    url = self._urlRoot + self._originalDir + newName;
+  fs.writeFile(path, data, function (err) {
+    if (err) return cb('Cannot save original:' + path, null);
+    return cb(null, { name: newName, path: path, url: url});
+  });
 }
 
 /** 
@@ -175,26 +176,26 @@ Picsee.prototype.saveOriginal = function (filename, data, cb) {
  * @param cb {Function} Callback method
  */
 Picsee.prototype.crop = function (req, res, cb) {
-	var self = this,
-		opts = utils.prepareOptions(req.body),
-		image = req.body.image,
-		orig = req.body.original,
-		mime = utils.getMime(image);
-		self._mime = mime;
-	switch (mime) {
-		case 'image/jpeg':
-			return self.cropJpeg(image, opts, orig, cb);
-			break;
-		case 'image/gif':
-			return self.cropGif(image, opts, orig, cb);
-			break;
-		case 'image/png':
-			return self.cropPng(image, opts, orig, cb);
-			break;
-		default: 
-			return cb('Could not determine mime type of this file: ' 
-				+ image, null);
-	}	
+  var self = this,
+    opts = utils.prepareOptions(req.body),
+    image = req.body.image,
+    orig = req.body.original,
+    mime = utils.getMime(image);
+    self._mime = mime;
+  switch (mime) {
+    case 'image/jpeg':
+      return self.cropJpeg(image, opts, orig, cb);
+      break;
+    case 'image/gif':
+      return self.cropGif(image, opts, orig, cb);
+      break;
+    case 'image/png':
+      return self.cropPng(image, opts, orig, cb);
+      break;
+    default: 
+      return cb('Could not determine mime type of this file: ' 
+        + image, null);
+  } 
 }
 
 /**
@@ -207,105 +208,121 @@ Picsee.prototype.crop = function (req, res, cb) {
  * @param {Function} cb Callback function to execute when all versions are processed
  */
 Picsee.prototype.process = function (opts, cb) {
-	var self = this,
-		versions = self._versions.slice(0), // Clone, don't modify
-		oldName = opts.image.name,
-		newName = self.renameImage(oldName, false, opts.orig),
-		ext = opts.ext,
-		results = [];
-		
-	function processVersion(version) {
-		if (version) {
-			if (self._directories == 'version') {
-				var versionName = Object.keys(version).shift(),
-					closing = '.' + ext,
-					fileName = newName + closing;	
-			} else {
-				var versionName = Object.keys(version).shift(),
-					closing = self._separator + versionName + '.' + ext,
-					fileName = newName + closing;
-			}
-			
-			if (self._directories == 'version') {
-				var params = {
-					processPath: opts.processPath, 
-					uploadPath: self._docRoot + self._uploadDir + versionName + '/' + fileName,
-					imageName: fileName,
-					ext: ext,
-					mime: self._mime,
-					url: self._urlRoot + self._uploadDir + versionName + '/' + fileName,
-					w: version[versionName].w || 0,
-					h: version[versionName].h || 0,
-				}
-			} else {
-				var params = {
-                                processPath: opts.processPath,
-                                uploadPath: self._docRoot + self._uploadDir + fileName,
-                                imageName: fileName,
-                                ext: ext,
-								mime: self._mime,
-                                url: self._urlRoot + self._uploadDir + fileName,
-                                w: version[versionName].w || 0,
-                                h: version[versionName].h || 0,
-							}
-			}
-			self.resizeTo(params, function (err, result) {
-				if (err) return cb(err, null);
-				results.push(result);
-				return processVersion(versions.shift());
-			});
-		} else {
-			utils.removeImage(opts.processPath, null, function() {
-				return cb(null, results);
-			});
-		}
-	}
+  var self = this,
+    versions = self._versions.slice(0), // Clone, don't modify
+    oldName = opts.image.name,
+    newName = self.renameImage(oldName, false, opts.orig),
+    ext = opts.ext,
+    results = [];
+    
+  function processVersion(version) {
+    if (version) {
+      if (self._directories == 'version') {
+        var versionName = Object.keys(version).shift(),
+          closing = '.' + ext,
+          fileName = newName + closing; 
+      } else {
+        var versionName = Object.keys(version).shift(),
+          closing = self._separator + versionName + '.' + ext,
+          fileName = newName + closing;
+      }
+      
+      if (self._directories == 'version') {
+        var params = {
+          processPath: opts.processPath, 
+          uploadPath: self._docRoot + self._uploadDir + versionName + '/' + fileName,
+          imageName: fileName,
+          ext: ext,
+          mime: self._mime,
+          url: self._urlRoot + self._uploadDir + versionName + '/' + fileName,
+          w: version[versionName].w || 0,
+          h: version[versionName].h || 0,
+        }
+      } else {
+        var params = {
+          processPath: opts.processPath,
+          uploadPath: self._docRoot + self._uploadDir + fileName,
+          imageName: fileName,
+          ext: ext,
+          mime: self._mime,
+          url: self._urlRoot + self._uploadDir + fileName,
+          w: version[versionName].w || 0,
+          h: version[versionName].h || 0,
+        }
+      }
+      self.resizeTo(params, function (err, result) {
+        if (err) return cb(err, null);
+        results.push(result);
+        return processVersion(versions.shift());
+      });
+    } else {
+      utils.removeImage(opts.processPath, null, function() {
+        return cb(null, results);
+      });
+    }
+  }
 
-	processVersion(versions.shift());
+  processVersion(versions.shift());
 }
 
 Picsee.prototype.cropJpeg = function (image, opts, orig, cb) {
-	var self = this,
-		src = gd.createFromJpeg(image),
-		target = gd.createTrueColor(opts.w, opts.h);
+  var self = this,
+    src = gd.createFromJpeg(image),
+    target = gd.createTrueColor(opts.w, opts.h);
 
-	src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
-		opts.w, opts.h);
+  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+    opts.w, opts.h);
 
-	target.saveJpeg(image, self._jpgQlty, function (err) {
-		if (err) return cb(err, null);
-		var opts = {
-			image: { name: path.basename(image) || null },
-			orig:  orig || null,
-			processPath: image || null,
-			ext: utils.getFileExt(image) || null
-		}
-		self.process(opts, cb); 
-	});
+  target.saveJpeg(image, self._jpgQlty, function (err) {
+    if (err) return cb(err, null);
+    var opts = {
+      image: { name: path.basename(image) || null },
+      orig:  orig || null,
+      processPath: image || null,
+      ext: utils.getFileExt(image) || null
+    }
+    self.process(opts, cb); 
+  });
 }
 
-function cropGif () {
-	
+function cropGif (image, opts, orig, cb) {
+  var self = this,
+    src = gd.createFromGif(image),
+    target = gd.createTrueColor(opts.w, opts.h);
+
+  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+    opts.w, opts.h);
+
+  target.saveGif(image, self._gifQlty, function (err) {
+    if (err) return cb(err, null);
+    var opts = {
+      image: { name: path.basename(image) || null },
+      orig:  orig || null,
+      processPath: image || null,
+      ext: utils.getFileExt(image) || null
+    }
+    self.process(opts, cb); 
+  }); 
 }
 
 Picsee.prototype.cropPng = function (image, opts, orig, cb) {
-	var self = this,
-		src = gd.createFromPng(image),
-		target = gd.createTrueColor(opts.w, opts.h);
+  var self = this,
+    src = gd.createFromPng(image),
+    target = gd.createTrueColor(opts.w, opts.h);
 
-	src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
-		opts.w, opts.h);
+  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+    opts.w, opts.h);
 
-	target.savePng(image, self._pngQlty, function (err) {
-		if (err) return cb(err, null);
-		var opts = {
-			image: { name: path.basename(image) || null },
-			orig:  orig || null,
-			processPath: image || null,
-			ext: utils.getFileExt(image) || null
-		}
-		self.process(opts, cb); 
-	});
+  target.savePng(image, self._pngQlty, function (err) {
+    if (err) return cb(err, null);
+    var opts = {
+      image: { name: path.basename(image) || null },
+      orig:  orig || null,
+      processPath: image || null,
+      ext: utils.getFileExt(image) || null
+    }
+    self.process(opts, cb); 
+  });
 }
 
 /** 
@@ -314,28 +331,27 @@ Picsee.prototype.cropPng = function (image, opts, orig, cb) {
  * @param {String} newName Desired New Name (if passed).
  */
 Picsee.prototype.renameImage = function (oldName, newName, origName) {
-	var self = this,
-		convention = self._namingConvention;	
-	switch (convention) {
-		case 'date':
-			if (self._renameOrigImage) {
-				var arrFn = origName.split('.');
-				var arrDt = arrFn[arrFn.length-2].split(self._separator);
-				
-				return arrDt[arrDt.length-1];
-			} else {
-				return String(new Date().getTime());
-			}
-			break;
-		case 'original':
-			return utils.normalizeName(oldName);
-			break;
-		case 'custom':
-			return utils.normalizeName(newName);
-			break;
-		default:
-			return utils.normalizeName(oldName);
-	}	
+  var self = this,
+    convention = self._namingConvention;  
+  switch (convention) {
+    case 'date':
+      if (self._renameOrigImage) {
+        var arrFn = origName.split('.');
+        var arrDt = arrFn[arrFn.length-2].split(self._separator);
+        return arrDt[arrDt.length-1];
+      } else {
+        return String(new Date().getTime());
+      }
+      break;
+    case 'original':
+      return utils.normalizeName(oldName);
+      break;
+    case 'custom':
+      return utils.normalizeName(newName);
+      break;
+    default:
+      return utils.normalizeName(oldName);
+  } 
 }
 
 /**
@@ -344,31 +360,29 @@ Picsee.prototype.renameImage = function (oldName, newName, origName) {
  * photo
  */
 Picsee.prototype.resizeTo = function (opts, cb) {
-	var self = this;
-	console.log('****************************************************');
-	console.log(self._mime);
-	opts.mime = self._mime;
-	switch (opts.ext) {
-		case "jpeg":
-			opts['quality'] = self._jpgQlty;
-			utils.resizeJpeg(opts, cb);
-			break;
-		case "jpg":
-			opts['quality'] = self._jpgQlty;
-			utils.resizeJpeg(opts, cb);
-			break;
-		case "gif":
-			opts['quality'] = self._gifQlty;
-			utils.resizeGif(opts, cb);
-			break;
-		case "png":
-			opts['quality'] = self._pngQlty;
-			utils.resizePng(opts, cb);
-			break;
-		default:
-			cb('Could not determine file extension + ' + opts.ext, null);
-			break;
-	}
+  var self = this;
+  opts.mime = self._mime;
+  switch (opts.ext) {
+    case "jpeg":
+      opts['quality'] = self._jpgQlty;
+      utils.resizeJpeg(opts, cb);
+      break;
+    case "jpg":
+      opts['quality'] = self._jpgQlty;
+      utils.resizeJpeg(opts, cb);
+      break;
+    case "gif":
+      opts['quality'] = self._gifQlty;
+      utils.resizeGif(opts, cb);
+      break;
+    case "png":
+      opts['quality'] = self._pngQlty;
+      utils.resizePng(opts, cb);
+      break;
+    default:
+      cb('Could not determine file extension + ' + opts.ext, null);
+      break;
+  }
 }
 
 /**
@@ -377,15 +391,15 @@ Picsee.prototype.resizeTo = function (opts, cb) {
  * @param {String} filename
  */
 Picsee.prototype.getOriginal = function (filename) {
-	var self = this,
-		original = (filename) ? filename : false;
+  var self = this,
+    original = (filename) ? filename : false;
 
-	if (!original) return {};
-	return {
-		name: original, 
-		path: self._docRoot + self._originalDir + original,
-		url: self._urlRoot + self._originalDir + original
-	}
+  if (!original) return {};
+  return {
+    name: original, 
+    path: self._docRoot + self._originalDir + original,
+    url: self._urlRoot + self._originalDir + original
+  }
 }
 
 exports = module.exports = new Picsee();
