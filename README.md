@@ -104,6 +104,7 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 | `inputFields` | Given a form with multiple inputs, which input(s) contain a photo?  Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. You can add as many as you want, and Picsee will process them all.
 | `renameOrigImage` | Use with date naming convention, boolean to append date at the end of the file. This will allow mapping to the created images
 
+NOTE: Currently JPEG/JPG and Non-Transparent PNGs are working. Gifs coming soon.
 #####Example Usage
 
     var docroot = '/var/www/myproject/';
