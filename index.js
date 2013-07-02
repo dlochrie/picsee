@@ -41,13 +41,15 @@ Picsee.prototype.initialize = function (opts) {
 	self._originalDir = opts.originalDir || false;
 	self._versions = opts.versions || false;
 	self._separator = opts.separator || false;
-	self._directories = {};
+	self._directories = opts.directories || false;
 	self._namingConvention = opts.namingConvention || false;
 	self._maxSize = utils.getMaxSize(opts.maxSize); 
 	self._jpgQlty = opts.jpgQlty || 80;
 	self._gifQlty = opts.gifQlty || 80;
 	self._pngQlty = opts.pngQlty || 9;
 	self._inputFields = opts.inputFields || [];
+	self._renameOrigImage = opts.renameOrigImage || false;
+	self._mime = '';
 	return self;
 }
 
@@ -63,7 +65,7 @@ Picsee.prototype.upload = function (req, res, cb) {
 		allowedInputs = self._inputFields, 
 		photos = [],
 		results = [];
-
+		
 	for (var file in req.files) {
 		if (allowedInputs.indexOf(file) !== -1) {
 			photos.push(req.files[file]);
@@ -120,7 +122,7 @@ Picsee.prototype.validate = function (image, cb) {
 		if (image.size > self._maxSize) 
 			return cb('Image is too large: ' + oldName, null);
 		fs.writeFile(stagingPath, data, function (err) {
-			if (err) return cb('Cannot save file: ' + stagingPath, null);
+			if (err) return cb(err + 'Cannot save file: ' + stagingPath, null);
 			var mime = utils.getMime(stagingPath);
 			if (MIMES_ALLOWED.indexOf(mime) !== -1) {
 				fs.writeFile(processPath, data, function (err) {
@@ -156,7 +158,7 @@ Picsee.prototype.validate = function (image, cb) {
  */
 Picsee.prototype.saveOriginal = function (filename, data, cb) {
 	var self = this,
-		newName = utils.renameOriginal(filename),
+		newName = utils.renameOriginal(filename, self._renameOrigImage, self._namingConvention, self._separator),
 		path = self._docRoot + self._originalDir + newName,
 		url = self._urlRoot + self._originalDir + newName;
 	fs.writeFile(path, data, function (err) {
@@ -176,17 +178,18 @@ Picsee.prototype.crop = function (req, res, cb) {
 	var self = this,
 		opts = utils.prepareOptions(req.body),
 		image = req.body.image,
+		orig = req.body.original,
 		mime = utils.getMime(image);
-
+		self._mime = mime;
 	switch (mime) {
 		case 'image/jpeg':
-			return self.cropJpeg(image, opts, cb);
+			return self.cropJpeg(image, opts, orig, cb);
 			break;
 		case 'image/gif':
-			return self.cropGif(image, opts, cb);
+			return self.cropGif(image, opts, orig, cb);
 			break;
 		case 'image/png':
-			return self.cropPng(image, opts, cb);
+			return self.cropPng(image, opts, orig, cb);
 			break;
 		default: 
 			return cb('Could not determine mime type of this file: ' 
@@ -207,26 +210,45 @@ Picsee.prototype.process = function (opts, cb) {
 	var self = this,
 		versions = self._versions.slice(0), // Clone, don't modify
 		oldName = opts.image.name,
-		newName = self.renameImage(oldName, false),
+		newName = self.renameImage(oldName, false, opts.orig),
 		ext = opts.ext,
 		results = [];
-
+		
 	function processVersion(version) {
 		if (version) {
-			var versionName = Object.keys(version).shift(),
-				closing = self._separator + versionName + '.' + ext,
-				fileName = newName + closing;	
-
-			var params = {
-				processPath: opts.processPath, 
-				uploadPath: self._docRoot + self._uploadDir + fileName,
-				imageName: fileName,
-				ext: ext,
-				url: self._urlRoot + self._uploadDir + fileName,
-				w: version[versionName].w || 0,
-				h: version[versionName].h || 0,
+			if (self._directories == 'version') {
+				var versionName = Object.keys(version).shift(),
+					closing = '.' + ext,
+					fileName = newName + closing;	
+			} else {
+				var versionName = Object.keys(version).shift(),
+					closing = self._separator + versionName + '.' + ext,
+					fileName = newName + closing;
 			}
-
+			
+			if (self._directories == 'version') {
+				var params = {
+					processPath: opts.processPath, 
+					uploadPath: self._docRoot + self._uploadDir + versionName + '/' + fileName,
+					imageName: fileName,
+					ext: ext,
+					mime: self._mime,
+					url: self._urlRoot + self._uploadDir + versionName + '/' + fileName,
+					w: version[versionName].w || 0,
+					h: version[versionName].h || 0,
+				}
+			} else {
+				var params = {
+                                processPath: opts.processPath,
+                                uploadPath: self._docRoot + self._uploadDir + fileName,
+                                imageName: fileName,
+                                ext: ext,
+								mime: self._mime,
+                                url: self._urlRoot + self._uploadDir + fileName,
+                                w: version[versionName].w || 0,
+                                h: version[versionName].h || 0,
+							}
+			}
 			self.resizeTo(params, function (err, result) {
 				if (err) return cb(err, null);
 				results.push(result);
@@ -242,7 +264,7 @@ Picsee.prototype.process = function (opts, cb) {
 	processVersion(versions.shift());
 }
 
-Picsee.prototype.cropJpeg = function (image, opts, cb) {
+Picsee.prototype.cropJpeg = function (image, opts, orig, cb) {
 	var self = this,
 		src = gd.createFromJpeg(image),
 		target = gd.createTrueColor(opts.w, opts.h);
@@ -254,6 +276,7 @@ Picsee.prototype.cropJpeg = function (image, opts, cb) {
 		if (err) return cb(err, null);
 		var opts = {
 			image: { name: path.basename(image) || null },
+			orig:  orig || null,
 			processPath: image || null,
 			ext: utils.getFileExt(image) || null
 		}
@@ -265,7 +288,7 @@ function cropGif () {
 	
 }
 
-Picsee.prototype.cropPng = function (image, opts, cb) {
+Picsee.prototype.cropPng = function (image, opts, orig, cb) {
 	var self = this,
 		src = gd.createFromPng(image),
 		target = gd.createTrueColor(opts.w, opts.h);
@@ -277,6 +300,7 @@ Picsee.prototype.cropPng = function (image, opts, cb) {
 		if (err) return cb(err, null);
 		var opts = {
 			image: { name: path.basename(image) || null },
+			orig:  orig || null,
 			processPath: image || null,
 			ext: utils.getFileExt(image) || null
 		}
@@ -289,12 +313,19 @@ Picsee.prototype.cropPng = function (image, opts, cb) {
  * @param {String} oldName Original Name (if passed).
  * @param {String} newName Desired New Name (if passed).
  */
-Picsee.prototype.renameImage = function (oldName, newName) {
+Picsee.prototype.renameImage = function (oldName, newName, origName) {
 	var self = this,
 		convention = self._namingConvention;	
 	switch (convention) {
 		case 'date':
-			return String(new Date().getTime());
+			if (self._renameOrigImage) {
+				var arrFn = origName.split('.');
+				var arrDt = arrFn[arrFn.length-2].split(self._separator);
+				
+				return arrDt[arrDt.length-1];
+			} else {
+				return String(new Date().getTime());
+			}
 			break;
 		case 'original':
 			return utils.normalizeName(oldName);
@@ -314,6 +345,9 @@ Picsee.prototype.renameImage = function (oldName, newName) {
  */
 Picsee.prototype.resizeTo = function (opts, cb) {
 	var self = this;
+	console.log('****************************************************');
+	console.log(self._mime);
+	opts.mime = self._mime;
 	switch (opts.ext) {
 		case "jpeg":
 			opts['quality'] = self._jpgQlty;
