@@ -177,25 +177,38 @@ Picsee.prototype.saveOriginal = function (filename, data, cb) {
  */
 Picsee.prototype.crop = function (req, res, cb) {
   var self = this,
-    opts = utils.prepareOptions(req.body),
     image = req.body.image,
     orig = req.body.original,
-    mime = utils.getMime(image);
+    mime = utils.getMime(image), opts;
     self._mime = mime;
-  switch (mime) {
-    case 'image/jpeg':
-      return self.cropJpeg(image, opts, orig, cb);
-      break;
-    case 'image/gif':
-      return self.cropGif(image, opts, orig, cb);
-      break;
-    case 'image/png':
-      return self.cropPng(image, opts, orig, cb);
-      break;
-    default: 
-      return cb('Could not determine mime type of this file: ' 
-        + image, null);
-  } 
+    if (!req.body.coordx1 && !req.body.coordx2 && !req.body.coordx2 && !req.body.coordy2 && !req.body.w && !req.body.h) {
+        opts = false;
+    } else {
+        opts = utils.prepareOptions(req.body);
+    }
+    if(opts)
+        switch (mime) {
+        case 'image/jpeg':
+          return self.cropJpeg(image, opts, orig, cb);
+          break;
+        case 'image/gif':
+          return self.cropGif(image, opts, orig, cb);
+          break;
+        case 'image/png':
+          return self.cropPng(image, opts, orig, cb);
+          break;
+        default: 
+          return cb('Could not determine mime type of this file: ' 
+            + image, null);
+  } else {
+    var opt = {
+      image: { name: path.basename(image) || null },
+      orig:  orig || null,
+      processPath: image || null,
+      ext: utils.getFileExt(image) || null
+    }
+    self.process(opt, cb); 
+  }
 }
 
 /**
