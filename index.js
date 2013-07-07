@@ -182,7 +182,8 @@ Picsee.prototype.crop = function (req, res, cb) {
     mime = utils.getMime(image), 
     opts, dfltOpts;
     self._mime = mime;
-    if (!req.body.coordx1 && !req.body.coordx2 && !req.body.coordx2 && !req.body.coordy2 && !req.body.w && !req.body.h) {
+    if (!req.body.coordx1 && !req.body.coordx2 && !req.body.coordx2 &&
+       !req.body.coordy2 && !req.body.w && !req.body.h) {
         opts = false;
         dfltOpts = {
           image: { name: path.basename(image) || null },
