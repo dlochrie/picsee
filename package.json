@@ -1,8 +1,8 @@
 {
   "name": "picsee",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "author": "Daniel Lochrie",
-  "contributors": ["Daniel Purdy"],
+  "contributors": ["Daniel Purdy", "Shruthi Anantharamu"],
   "description": "Node middleware for Photo Management, Image Cropping, and Uploading, ExpressJS Compatible.",
   "engines": {
     "node": ">= 0.0.8"
