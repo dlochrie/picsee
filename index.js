@@ -49,7 +49,6 @@ Picsee.prototype.initialize = function (opts) {
   self._pngQlty = opts.pngQlty || 9;
   self._inputFields = opts.inputFields || [];
   self._renameOrigImage = opts.renameOrigImage || false;
-  self._uploadedCropPath = opts.uploadedCropPath || false;
   self._relativePath = opts.relativePath || "";
   self._mime = '';
   return self;
@@ -136,13 +135,10 @@ Picsee.prototype.validate = function (image, cb) {
             var dims = utils.getRealDimensions(processPath, mime);
             if (keepOriginal) {
               self.saveOriginal(oldName, data, function(err, original) {
-				if (self._uploadedCropPath == 'relative') {
-					var newName = processPath.split('/');
-					newName = newName[newName.length-1];
-					var relpath = self._relativePath + self._processDir + newName;
-				} else {
-					var relpath = processPath;
-				}
+			    var newName = processPath.split('/');
+				newName = newName[newName.length-1];
+				var relpath = self._relativePath + self._processDir + newName;
+				
                 return cb(null, { name: tmpName, path: processPath, url: url, 
                   original: original, w: dims.w, h: dims.h, relpath: relpath });
               });
