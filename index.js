@@ -49,6 +49,7 @@ Picsee.prototype.initialize = function (opts) {
   self._pngQlty = opts.pngQlty || 9;
   self._inputFields = opts.inputFields || [];
   self._renameOrigImage = opts.renameOrigImage || false;
+  self._relativePath = opts.relativePath || "";
   self._mime = '';
   return self;
 }
@@ -134,8 +135,12 @@ Picsee.prototype.validate = function (image, cb) {
             var dims = utils.getRealDimensions(processPath, mime);
             if (keepOriginal) {
               self.saveOriginal(oldName, data, function(err, original) {
+			    var newName = processPath.split('/');
+				newName = newName[newName.length-1];
+				var relpath = self._relativePath + self._processDir + newName;
+				
                 return cb(null, { name: tmpName, path: processPath, url: url, 
-                  original: original, w: dims.w, h: dims.h  });
+                  original: original, w: dims.w, h: dims.h, relpath: relpath });
               });
             } else {
               return cb(null, { name: tmpName, path: processPath, url: url, 
@@ -160,11 +165,12 @@ Picsee.prototype.saveOriginal = function (filename, data, cb) {
   var self = this,
     newName = utils.renameOriginal(filename, self._renameOrigImage, 
         self._namingConvention, self._separator),
-    path = self._docRoot + self._originalDir + newName,
-    url = self._urlRoot + self._originalDir + newName;
-  fs.writeFile(path, data, function (err) {
+    url = self._urlRoot + self._originalDir + newName,
+	path = self._docRoot + self._originalDir + newName;
+
+fs.writeFile(path, data, function (err) {
     if (err) return cb('Cannot save original:' + path, null);
-    return cb(null, { name: newName, path: path, url: url});
+    return cb(null, { name: newName, path: path, url: url });
   });
 }
 
@@ -182,8 +188,9 @@ Picsee.prototype.crop = function (req, res, cb) {
     mime = utils.getMime(image), 
     opts, dfltOpts;
     self._mime = mime;
-    if (!req.body.coordx1 && !req.body.coordx2 && !req.body.coordx2 &&
-       !req.body.coordy2 && !req.body.w && !req.body.h) {
+
+    if ((!req.body.coordx1 && !req.body.coordx2 && !req.body.coordx2 &&
+       !req.body.coordy2 && !req.body.w && !req.body.h) || (req.body.w == 0 && req.body.h == 0)) {
         opts = false;
         dfltOpts = {
           image: { name: path.basename(image) || null },
