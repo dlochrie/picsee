@@ -317,7 +317,7 @@ Picsee.prototype.cropJpeg = function (image, opts, orig, cb) {
   });
 }
 
-function cropGif (image, opts, orig, cb) {
+Picsee.prototype.cropGif = function cropGif (image, opts, orig, cb) {
   var self = this,
     src = gd.createFromGif(image),
     target = gd.createTrueColor(opts.w, opts.h);
@@ -325,7 +325,7 @@ function cropGif (image, opts, orig, cb) {
   src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
     opts.w, opts.h);
 
-  target.saveGif(image, self._gifQlty, function (err) {
+  target.saveGif(image, function (err) {
     if (err) return cb(err, null);
     var opts = {
       image: { name: path.basename(image) || null },
