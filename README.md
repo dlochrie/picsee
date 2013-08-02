@@ -104,8 +104,9 @@ You will need to have GD installed so that `node-gd` (a dependency) can compile.
 | `inputFields` | Given a form with multiple inputs, which input(s) contain a photo?  Ex: `<input type="file" name="profile_photo" />` will require that you add `profile_photo` to the array of input fields. You can add as many as you want, and Picsee will process them all.
 | `renameOrigImage` | Use with date naming convention, boolean to append date at the end of the file. This will allow mapping to the created images
 | `relativePath` | Optional to set an needed prefix to a relative path that is generated for processing image
+| `gifTransparency` | Boolean. Whether or not to support GIF transparency, false by default. No transparency provides a much higher quality image result.
 
-NOTE: Currently JPEG/JPG and Non-Transparent PNGs are working. Gifs coming soon.
+NOTE: JPEG/JPG, PNG (transparent and non-transparent), and GIFS (see gifTransparency option) are now fullly functional.
 #####Example Usage
 
     var docroot = '/var/www/myproject/';
@@ -141,7 +142,8 @@ Picsee requires that any directory you are uploading to _exists_ and is _writeab
 ####Usage with Express
 
 See: [pisee-looksee](https://github.com/dlochrie/picsee-looksee).
-
+Note: For JCROP set up, if you do not set the JCROP background color to transparent, a background color will apear through any transparent images.
+(http://deepliquid.com/content/Jcrop_Manual.html)
 
 ##License
 The MIT License (MIT)

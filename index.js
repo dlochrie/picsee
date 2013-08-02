@@ -45,12 +45,12 @@ Picsee.prototype.initialize = function (opts) {
   self._namingConvention = opts.namingConvention || false;
   self._maxSize = utils.getMaxSize(opts.maxSize); 
   self._jpgQlty = opts.jpgQlty || 80;
-  self._gifQlty = opts.gifQlty || 80;
   self._pngQlty = opts.pngQlty || 9;
   self._inputFields = opts.inputFields || [];
   self._renameOrigImage = opts.renameOrigImage || false;
   self._relativePath = opts.relativePath || "";
   self._mime = '';
+  self._gifTransparency = opts.gifTransparency || false;
   return self;
 }
 
@@ -125,13 +125,13 @@ Picsee.prototype.validate = function (image, cb) {
     fs.writeFile(stagingPath, data, function (err) {
       if (err) return cb(err + 'Cannot save file: ' + stagingPath, null);
       var mime = utils.getMime(stagingPath);
-      if (MIMES_ALLOWED.indexOf(mime) !== -1) {
-        fs.writeFile(processPath, data, function (err) {
+      if (MIMES_ALLOWED.indexOf(mime) !== -1) {		  
+        fs.writeFile(processPath, data, function (err) {			
           if (err) {
             msg = 'Cannot save file: ' + processPath;
             return utils.removeImage(stagingPath, msg, cb);
           }
-          utils.removeImage(stagingPath, null, function () {
+          utils.removeImage(stagingPath, null, function () { 
             var dims = utils.getRealDimensions(processPath, mime);
             if (keepOriginal) {
               self.saveOriginal(oldName, data, function(err, original) {
@@ -146,8 +146,9 @@ Picsee.prototype.validate = function (image, cb) {
               return cb(null, { name: tmpName, path: processPath, url: url, 
                 original: original, w: dims.w, h: dims.h  });
             }
+			
           });
-        });
+        });	
       } else {
         msg = 'File is NOT an image: ' + oldName;
         return utils.removeImage(stagingPath, msg, cb);
@@ -319,19 +320,30 @@ Picsee.prototype.cropJpeg = function (image, opts, orig, cb) {
 
 Picsee.prototype.cropGif = function cropGif (image, opts, orig, cb) {
   var self = this,
-    src = gd.createFromGif(image),
+    src = gd.createFromGif(image);
+	
+  if (self._gifTransparency) {	
+	target = gd.create(opts.w, opts.h);
+  } else {
     target = gd.createTrueColor(opts.w, opts.h);
-
+  }
+	
+  target.alphaBlending(0);
+  target.saveAlpha(1);
+  var transparent = src.colorAllocateAlpha(0,0,0,127);
+  target.colorTransparent(transparent);
+  target.filledRectangle(0, 0, opts.w, opts.h, transparent); 
+	
   src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
     opts.w, opts.h);
 
   target.saveGif(image, function (err) {
     if (err) return cb(err, null);
     var opts = {
-      image: { name: path.basename(image) || null },
-      orig:  orig || null,
-      processPath: image || null,
-      ext: utils.getFileExt(image) || null
+	  image: { name: path.basename(image) || null },
+	  orig:  orig || null,
+	  processPath: image || null,
+	  ext: utils.getFileExt(image) || null
     }
     self.process(opts, cb); 
   }); 
@@ -342,6 +354,11 @@ Picsee.prototype.cropPng = function (image, opts, orig, cb) {
     src = gd.createFromPng(image),
     target = gd.createTrueColor(opts.w, opts.h);
 
+  target.alphaBlending(0);
+  target.saveAlpha(1);
+  var transparent = src.colorAllocateAlpha(0,0,0,127);
+  target.colorTransparent(transparent);
+  
   src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
     opts.w, opts.h);
 
@@ -404,7 +421,7 @@ Picsee.prototype.resizeTo = function (opts, cb) {
       utils.resizeJpeg(opts, cb);
       break;
     case "gif":
-      opts['quality'] = self._gifQlty;
+	  opts['gifTrans'] = self._gifTransparency;
       utils.resizeGif(opts, cb);
       break;
     case "png":
