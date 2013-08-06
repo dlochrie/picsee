@@ -321,19 +321,20 @@ Picsee.prototype.cropJpeg = function (image, opts, orig, cb) {
 Picsee.prototype.cropGif = function cropGif (image, opts, orig, cb) {
   var self = this,
     src = gd.createFromGif(image);
-	
-  if (self._gifTransparency) {	
+
+  if (self._gifTransparency) {
 	target = gd.create(opts.w, opts.h);
   } else {
     target = gd.createTrueColor(opts.w, opts.h);
   }
-	
+  
   target.alphaBlending(0);
   target.saveAlpha(1);
-  var transparent = src.colorAllocateAlpha(0,0,0,127);
-  target.colorTransparent(transparent);
+
+  var transparent = src.colorAllocateAlpha(255,255,255,127);
   target.filledRectangle(0, 0, opts.w, opts.h, transparent); 
-	
+  target.colorTransparent(transparent);
+  
   src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
     opts.w, opts.h);
 

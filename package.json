@@ -1,8 +1,17 @@
 {
   "name": "picsee",
-  "version": "0.1.0",
-  "author": "Daniel Lochrie",
-  "contributors": ["Daniel Purdy", "Shruthi Anantharamu"],
+  "version": "0.1.1",
+  "author": {
+    "name": "Daniel Lochrie"
+  },
+  "contributors": [
+    {
+      "name": "Daniel Purdy"
+    },
+    {
+      "name": "Shruthi Anantharamu"
+    }
+  ],
   "description": "Node middleware for Photo Management, Image Cropping, and Uploading, ExpressJS Compatible.",
   "engines": {
     "node": ">= 0.0.8"
@@ -26,8 +35,23 @@
   },
   "devDependencies": {},
   "keywords": [
-    "picsee", "image", "image manager", "image uploader", "photo upload", 
-		"cropper", "cropping", "photo manipulation", "gd", "node-gd"
+    "picsee",
+    "image",
+    "image manager",
+    "image uploader",
+    "photo upload",
+    "cropper",
+    "cropping",
+    "photo manipulation",
+    "gd",
+    "node-gd"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "readme": "picsee\r\n=================\r\n\r\n##Description  \r\nExpress-Compatible middleware that offers support for uploading photos, setting custom sizes, and \r\nstoring them locally or remotely. API includes mechanism for cropping and resizing photos as well. \r\n\r\n##Goals\r\n\r\n* Provide a RESTFul interface that allows for photos to be uploaded safely to your app\r\n* Be as lightweight as possible, so that you can use whatever ORM/DB/Store you want\r\n* Offer a way to easily set desired sizes for your photo uploads through the conf.\r\n* [[Soon]] Offer support for Amazon S3 Storage\r\n* [[Soon]] Offer an API for managing your photos in a gallery, including sorting, and CRUD for photos\r\nin a gallery.\r\n\r\n##How it Works\r\nPicsee allows you to define _where_ and _how_ you want to save your photos. Using the GD library,\r\nPicsee resizes your photo and saves it according to your specifications.\r\n\r\n###Typical Use Case: Profile Photo\r\nIf you are creating a form where your user is uploading a profile photo, you are most-likely\r\ngoing to want 3 versions of the photo:\r\n\r\n* Small\r\n* Medium\r\n* Large\r\n\r\nYou name them, _thmb_, _med_, and _lrg_ and your team/company/UI/UX/etc determines that:\r\n\r\n* **thmb** = 32x32\r\n* **med** = 200x[whatever]\r\n* **lrg** = 800x[whatever] \r\n\r\nSo, your thmb will be scaled and saved to 32*32, and your _med_ will be rescaled so that it is 200 pixels wide by whatever height is proportional to the original.\r\n\r\nYour photos are saved according to whatever naming conventions you provide:\r\n\r\n* **_date_**: 1365215413_thmb.jpg, 1365215413_med.jpg, 1365215413_lrg.jpg\r\n* **_original_**: GradPhotos-0001-05-03-1977_thmb.jpg, etc\r\n* **_custom_**: _Coming Soon_\r\n\r\nDon't like underscores? Change the `separator` option.\r\n\r\nBefore your photos are saved, the original is moved to a `staging` directory, \r\nwhich you define. Here the Mime type is checked, and it is rejected if it is not\r\na \"jpg\", \"png\", or \"gif\". \r\n\r\nDirectories\r\nDirectories option \"single\" will place all images inside the uploaded folder.\r\nDirectories option \"version\" will place all images in corresponding subdirectories that must be corrected under the upload directory.\r\nFor example, given /upload directory and thmb, med, lrg options defined, the user shall need to create /upload/thmb /upload/med /upload/lrg\r\nAt which point all cropped images will save as /upload/thmb/filename.filetype instead of separating by _thmb that part is done with the sub directories.\r\n\r\nrenameOrigImage\r\nBoolean option \r\nUse with date naming convention.\r\nthat instead of just passing the original filename through the normalizer will append the date at the end.\r\nThe dates for all cropped files will then match up with the original to allow for file tracking.\r\nExample:\r\nuploading myimage.jpg will generate myimage_12345.jpg\r\nAll subsequent images will then start with 12345\r\n\r\n\r\n## Install\r\n\r\n    npm install picsee\r\n\r\n### Prerequisite: GD  \r\n\r\n_Picsee currently only supports `GD`._\r\n\r\nYou will need to have GD installed so that `node-gd` (a dependency) can compile. Please have GD installed first.\r\n\r\n#### GD on Mac  \r\n1. Get [HomeBrew](http://mxcl.github.io/homebrew/)\r\n2. `brew install gd`\r\n\r\n#### GD on Ubuntu\r\n    apt-get install libgd2-xpm-dev\r\n\r\n###App Setup\r\n\r\n    var picsee = require('picsee');\r\n\r\n####Define Options\r\n\r\n| Option     | Description  |\r\n| :--------------| :------------ |\r\n| `docRoot` | root path to your images, ie /path/app/public/images/\r\n| `urlRoot` | base URL to view your images when they are uploaded\r\n| `stagingDir` | sandboxed (temporary) directory for uploading photos\r\n| `processDir` | directory to save processed photo(s)\r\n| `uploadDir` | permanent directory for saved photo(s)\r\n| `originalDir` | location of where the original is stored, if this option is omitted, or set to false, then originals will not be stored\r\n| `versions` | versions of photos with width and height option * Format: `{ \"version name\": { w: 200, h: 200 } }`.\r\n| `separator` | character to use when concatenating file names, ie `filename_thumb` where _filename_ is the original filename, and _thumb_ is the name of the version. `-` or `_` should work.\r\n| `directories` | Convention for storing files, i.e., use one directory and name files with versions attached, or store each file in a different directory named after the version? * single * version \r\n| `namingConvention` | how to name files? * date * original * custom\r\n| `maxSize` | Max Size (in KB) allowed\r\n| `jpgQlty` | Quality of Jpg (Up to 100, 100 being Highest)\r\n| `gifQlty` | Quality of Gif (Up to 100, 100 being Highest)\r\n| `pngQlty` | Quality of Png (Up to 10, 10 being Highest)\r\n| `inputFields` | Given a form with multiple inputs, which input(s) contain a photo?  Ex: `<input type=\"file\" name=\"profile_photo\" />` will require that you add `profile_photo` to the array of input fields. You can add as many as you want, and Picsee will process them all.\r\n| `renameOrigImage` | Use with date naming convention, boolean to append date at the end of the file. This will allow mapping to the created images\r\n| `relativePath` | Optional to set an needed prefix to a relative path that is generated for processing image\r\n| `gifTransparency` | Boolean. Whether or not to support GIF transparency, false by default. No transparency provides a much higher quality image result.\r\n\r\nNOTE: JPEG/JPG, PNG (transparent and non-transparent), and GIFS (see gifTransparency option) are now fullly functional.\r\n#####Example Usage\r\n\r\n    var docroot = '/var/www/myproject/';\r\n    var options = {\r\n      stagingDir: '/full/path/outside/of/project',\r\n      processDir: docroot + 'public/photos/,\r\n      versions: [  \r\n        { \"thmb\": { w: 32, h: 32 } },   \r\n        { \"profile\": { w: 200, h: null } },  \r\n        { \"full\": { w: null, h: null } }  \r\n      ],\r\n      separator: '_',  \r\n      directories: 'single',\r\n      namingConvention: 'date',\r\n\t  renameOrigImage: false,\r\n      inputFields: ['profPhoto', 'other']\r\n    }\r\n\r\n> *NOTE*: For security purposes, where you put the `stagingDir` is important. It is in the staging directory \r\n> that the file is being validated as a real file, and its mime-type is checked. If it does not pass validation,\r\n> it won't make it into your application's photo location. \r\n\r\n####Configure\r\n    app.configure(function (){\r\n      // Set up your options first\r\n      app.use(picsee.initialize(options));\r\n      app.use(app.router);\r\n    });\r\n\r\n####Create Directories\r\nPicsee requires that any directory you are uploading to _exists_ and is _writeable_ by _Node_ or whatever user is running the app. \r\n\r\n####Usage with Express\r\n\r\nSee: [pisee-looksee](https://github.com/dlochrie/picsee-looksee).\r\nNote: For JCROP set up, if you do not set the JCROP background color to transparent, a background color will apear through any transparent images.\r\n(http://deepliquid.com/content/Jcrop_Manual.html)\r\n\r\n##License\r\nThe MIT License (MIT)\r\n\r\nCopyright (c) 2013 Daniel Lochrie\r\n\r\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\r\n\r\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\r\n",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/dlochrie/picsee/issues"
+  },
+  "_id": "picsee@0.1.0",
+  "_from": "picsee@0.1.0"
 }
