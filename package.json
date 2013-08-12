@@ -1,6 +1,6 @@
 {
   "name": "picsee",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "Daniel Lochrie"
   },
@@ -20,6 +20,7 @@
     "express": "3.x",
     "node-gd": "*",
     "mime": "*",
+	"mmmagic": "*",
     "should": "*"
   },
   "main": "./index.js",
@@ -52,6 +53,6 @@
   "bugs": {
     "url": "https://github.com/dlochrie/picsee/issues"
   },
-  "_id": "picsee@0.1.0",
-  "_from": "picsee@0.1.0"
+  "_id": "picsee@0.1.1",
+  "_from": "picsee@0.1.1"
 }
