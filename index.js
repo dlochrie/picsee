@@ -299,7 +299,7 @@ Picsee.prototype.process = function(opts, cb) {
               fileName,
           w: version[versionName].w || 0,
           h: version[versionName].h || 0,
-        }
+        };
       } else {
         var params = {
           processPath: opts.processPath,
@@ -310,7 +310,7 @@ Picsee.prototype.process = function(opts, cb) {
           url: self._urlRoot + self._uploadDir + fileName,
           w: version[versionName].w || 0,
           h: version[versionName].h || 0,
-        }
+        };
       }
       self.resizeTo(params, function(err, result) {
         if (err) return cb(err, null);
@@ -345,7 +345,7 @@ Picsee.prototype.cropJpeg = function(image, opts, orig, cb) {
       processPath: image || null,
       ext: utils.getFileExt(image) || null
     };
-    self.process(opts, cb); 
+    self.process(opts, cb);
   });
 };
 
@@ -360,15 +360,15 @@ Picsee.prototype.cropGif = function cropGif(image, opts, orig, cb) {
   } else {
     target = gd.createTrueColor(opts.w, opts.h);
   }
-  
+
   target.alphaBlending(0);
   target.saveAlpha(1);
 
   var transparent = src.colorAllocateAlpha(255,255,255,127);
-  target.filledRectangle(0, 0, opts.w, opts.h, transparent); 
+  target.filledRectangle(0, 0, opts.w, opts.h, transparent);
   target.colorTransparent(transparent);
   
-  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h,
       opts.w, opts.h);
 
   target.saveGif(image, function (err) {
@@ -380,7 +380,7 @@ Picsee.prototype.cropGif = function cropGif(image, opts, orig, cb) {
       ext: utils.getFileExt(image) || null
     }
     self.process(opts, cb); 
-  }); 
+  });
 };
 
 
@@ -395,7 +395,7 @@ Picsee.prototype.cropPng = function(image, opts, orig, cb) {
   var transparent = src.colorAllocateAlpha(0,0,0,127);
   target.colorTransparent(transparent);
   
-  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h, 
+  src.copyResampled(target, 0, 0, opts.x1, opts.y1, opts.w, opts.h,
     opts.w, opts.h);
 
   target.savePng(image, self._pngQlty, function (err) {
@@ -406,7 +406,7 @@ Picsee.prototype.cropPng = function(image, opts, orig, cb) {
       processPath: image || null,
       ext: utils.getFileExt(image) || null
     };
-    self.process(opts, cb); 
+    self.process(opts, cb);
   });
 };
 
