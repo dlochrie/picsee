@@ -18,9 +18,12 @@
   },
   "dependencies": {
     "express": "3.x",
-    "node-gd": "*",
-    "mmmagic": "*",
-    "should": "*"
+    "node-gd": "0.2.3",
+    "mmmagic": "0.3.3",
+    "should": "1.2.2",
+    "mocha": "1.12.0",
+    "sinon": "1.7.3",
+    "mime": "1.2.11"
   },
   "main": "./index.js",
   "repository": {
@@ -28,7 +31,7 @@
     "url": "git://github.com/dlochrie/picsee.git"
   },
   "scripts": {
-    "test": "node test"
+    "test": "./node_modules/.bin/mocha --recursive test/"
   },
   "directories": {
     "test": "test"

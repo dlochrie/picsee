@@ -33,16 +33,16 @@ function Picsee () {
  */
 Picsee.prototype.initialize = function (opts) {
   opts = opts || {};
-  this._docRoot = opts.docRoot || false;
-  this._urlRoot = opts.urlRoot || false;
-  this._stagingDir = opts.stagingDir || false;
-  this._processDir = opts.processDir || false;
-  this._uploadDir = opts.uploadDir || false;
-  this._originalDir = opts.originalDir || false;
+  this._docRoot = opts.docRoot || null;
+  this._urlRoot = opts.urlRoot || null;
+  this._stagingDir = opts.stagingDir || null;
+  this._processDir = opts.processDir || null;
+  this._uploadDir = opts.uploadDir || null;
+  this._originalDir = opts.originalDir || null;
   this._versions = opts.versions || false;
-  this._separator = opts.separator || false;
+  this._separator = opts.separator || '_';
   this._directories = opts.directories || false;
-  this._namingConvention = opts.namingConvention || false;
+  this._namingConvention = opts.namingConvention || 'date';
   this._maxSize = utils.getMaxSize(opts.maxSize);
   this._jpgQlty = opts.jpgQlty || 80;
   this._pngQlty = opts.pngQlty || 9;
