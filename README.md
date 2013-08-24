@@ -145,6 +145,14 @@ See: [pisee-looksee](https://github.com/dlochrie/picsee-looksee).
 Note: For JCROP set up, if you do not set the JCROP background color to transparent, a background color will apear through any transparent images.
 (http://deepliquid.com/content/Jcrop_Manual.html)
 
+##Testing
+
+Requires mocha: `npm install mocha -g`.
+
+To run:
+
+    npm test
+
 ##License
 The MIT License (MIT)
 
