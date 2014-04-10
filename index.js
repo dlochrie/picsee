@@ -130,44 +130,49 @@ Picsee.prototype.validate = function (image, cb) {
       magic.detectFile(stagingPath, function(err, result) {
         if (err) throw err;
         var mime = result;
-
-        var ext = utils.getExtByMime(mime),
-          tmpName = utils.renameForProcessing(oldName, ext),
-          stagingPath = self._stagingDir + tmpName,
-          processPath = self._docRoot + self._processDir + tmpName,
-          url = self._urlRoot + self._processDir + tmpName;
-        fs.writeFile(stagingPath, data, function(err) {
-          if (err) {
-            return cb(err + 'Cannot save CORRECTED file: ' + stagingPath, null);
+    
+        var parsedExtension = utils.getExtByMime(mime),
+          correctedTmpName = utils.renameForProcessing(oldName, parsedExtension),
+          correctedStagingPath = self._stagingDir + correctedTmpName,
+          correctedProcessPath = self._docRoot + self._processDir + correctedTmpName,
+          correctedUrl = self._urlRoot + self._processDir + correctedTmpName;
+        fs.unlink(stagingPath, function(err, result){
+          if(err){
+            return cb(err + 'Cannot delete staging file: ' + stagingPath, null);
           }
-          if (MIMES_ALLOWED.indexOf(mime) !== -1) {
-            fs.writeFile(processPath, data, function(err) {
-              if (err) {
-                msg = 'Cannot save file: ' + processPath;
-                return utils.removeImage(stagingPath, msg, cb);
-              }
-              utils.removeImage(stagingPath, null, function() {
-                var dims = utils.getRealDimensions(processPath, mime);
-                if (keepOriginal) {
-                  self.saveOriginal(oldName, data, function(err, original) {
-                    var newName = processPath.split('/');
-                    newName = newName[newName.length-1];
-                    var relpath = self._relativePath + self._processDir +
-                        newName;
-                  return cb(null, { name: tmpName, path: processPath, url: url,
-                      original: original, w: dims.w, h: dims.h, relpath:
-                      relpath});
-                  });
-                } else {
-                  return cb(null, {name: tmpName, path: processPath, url: url,
-                      original: original, w: dims.w, h: dims.h});
+          fs.writeFile(correctedStagingPath, data, function(err) {
+            if (err) {
+              return cb(err + 'Cannot save CORRECTED file: ' + correctedStagingPath, null);
+            }
+            if (MIMES_ALLOWED.indexOf(mime) !== -1) {
+              fs.writeFile(correctedProcessPath, data, function(err) {
+                if (err) {
+                  msg = 'Cannot save file: ' + correctedProcessPath;
+                  return utils.removeImage(correctedStagingPath, msg, cb);
                 }
+                utils.removeImage(correctedStagingPath, null, function() {
+                  var dims = utils.getRealDimensions(correctedProcessPath, mime);
+                  if (keepOriginal) {
+                    self.saveOriginal(oldName, data, function(err, original) {
+                      var newName = correctedProcessPath.split('/');
+                      newName = newName[newName.length-1];
+                      var relpath = self._relativePath + self._processDir +
+                          newName;
+                    return cb(null, { name: correctedTmpName, path: correctedProcessPath, url: correctedUrl,
+                        original: original, w: dims.w, h: dims.h, relpath:
+                        relpath});
+                    });
+                  } else {
+                    return cb(null, {name: correctedTmpName, path: correctedProcessPath, url: correctedUrl,
+                        original: original, w: dims.w, h: dims.h});
+                  }
+                });
               });
-            });
-          } else {
-            msg = 'File is NOT an image: ' + oldName;
-            return utils.removeImage(stagingPath, msg, cb);
-          }
+            } else {
+              msg = 'File is NOT an image: ' + oldName;
+              return utils.removeImage(correctedStagingPath, msg, cb);
+            }
+          });
         });
       });
     });
