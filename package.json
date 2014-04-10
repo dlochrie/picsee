@@ -1,6 +1,6 @@
 {
   "name": "picsee",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": {
     "name": "Daniel Lochrie"
   },
@@ -10,6 +10,9 @@
     },
     {
       "name": "Shruthi Anantharamu"
+    },
+    {
+      "name": "Marty Richters"   
     }
   ],
   "description": "Node middleware for Photo Management, Image Cropping, and Uploading, ExpressJS Compatible.",
