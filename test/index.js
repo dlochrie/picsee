@@ -1,5 +1,5 @@
 var picsee = require('../'),
-  should = require('should');
+    should = require('should');
 
 describe('Picsee Photo Uploader', function() {
   /** TODO: Functional tests to be implemented **/

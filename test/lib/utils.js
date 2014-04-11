@@ -1,15 +1,15 @@
 var should = require('should'),
-  sinon = require('sinon'),
-  utils = require('../../lib/utils');
+    sinon = require('sinon'),
+    utils = require('../../lib/utils');
 
 describe('Utils', function() {
 
   /** Create a Stub for the Timestamp Method. */
-  var getDate = sinon.stub(utils, "getDate").returns(1377287616449);
+  var getDate = sinon.stub(utils, 'getDate').returns(1377287616449);
 
   describe('renameForProcessing', function() {
     var ext,
-      newName;
+        newName;
 
     beforeEach(function(done) {
       ext = 'jpg';
@@ -40,9 +40,9 @@ describe('Utils', function() {
 
   describe('renameOriginal', function() {
     var oldName,
-      rename,
-      convention,
-      separator;
+        rename,
+        convention,
+        separator;
 
     beforeEach(function(done) {
       rename = false;
@@ -80,31 +80,31 @@ describe('Utils', function() {
   });
 
   describe('normalizeName', function() {
-    var name,  normalized;
+    var name, normalized;
 
     it('should lowercase a filename with alphanumberic characters',
-      function(done) {
-        name = 'ABCDE12345';
-        normalized = utils.normalizeName(name);
-        normalized.should.equal(name.toLowerCase());
-        done();
-      });
+       function(done) {
+         name = 'ABCDE12345';
+         normalized = utils.normalizeName(name);
+         normalized.should.equal(name.toLowerCase());
+         done();
+       });
 
     it('should replace non-alphanumberic characters with an underscore',
-      function(done) {
-        name = '$A#B@C%D-1!2.3~4`5';
-        normalized = utils.normalizeName(name);
-        normalized.should.equal('_A_B_C_D-1_2_3_4_5'.toLowerCase());
-        done();
-      });
+       function(done) {
+         name = '$A#B@C%D-1!2.3~4`5';
+         normalized = utils.normalizeName(name);
+         normalized.should.equal('_A_B_C_D-1_2_3_4_5'.toLowerCase());
+         done();
+       });
 
     it('should replace empty names with "_tmp"',
-      function(done) {
-        name = '';
-        normalized = utils.normalizeName(name);
-        normalized.should.equal('_tmp');
-        done();
-      });
+       function(done) {
+         name = '';
+         normalized = utils.normalizeName(name);
+         normalized.should.equal('_tmp');
+         done();
+       });
   });
 
   describe('getFileExt', function() {
@@ -118,12 +118,12 @@ describe('Utils', function() {
     });
 
     it('should get the file extension for filenames with spaces',
-      function(done) {
-        file = 'test file.jpg';
-        ext = utils.getFileExt(file);
-        ext.should.equal('jpg');
-        done();
-      });
+       function(done) {
+         file = 'test file.jpg';
+         ext = utils.getFileExt(file);
+         ext.should.equal('jpg');
+         done();
+       });
 
     it('should get the file extension for filenames with dots', function(done) {
       file = 'this.is.a.test.file.jpg';
