@@ -23,19 +23,21 @@ describe('Utils', function() {
       done();
     });
 
-    it('should rename files if it has no name before extension', function(done) {
-      var noName = '.jpg';
-      newName = utils.renameForProcessing(noName, ext);
-      newName.should.equal('_tmp_' + getDate() + '.' + ext);
-      done();
-    });
+    it('should rename files if it has no name before extension',
+       function(done) {
+         var noName = '.jpg';
+         newName = utils.renameForProcessing(noName, ext);
+         newName.should.equal('_tmp_' + getDate() + '.' + ext);
+         done();
+       });
 
-    it('should rename files with non-alphanumeric characters', function(done) {
-      var badName = '$dollar.jpg';
-      newName = utils.renameForProcessing(badName, ext);
-      newName.should.equal('_dollar_' + getDate() + '.' + ext);
-      done();
-    });
+    it('should rename files with non-alphanumeric characters',
+       function(done) {
+         var badName = '$dollar.jpg';
+         newName = utils.renameForProcessing(badName, ext);
+         newName.should.equal('_dollar_' + getDate() + '.' + ext);
+         done();
+       });
   });
 
   describe('renameOriginal', function() {
@@ -53,8 +55,8 @@ describe('Utils', function() {
 
     it('should keep the same name as the original file', function(done) {
       oldName = 'Original Digital Image.Jpeg';
-      var newName = utils.renameOriginal(oldName, rename, convention,
-          separator);
+      var newName = utils.renameOriginal(
+          oldName, rename, convention, separator);
       newName.should.equal(oldName);
       done();
     });
@@ -62,8 +64,8 @@ describe('Utils', function() {
     it('should rename the original file and append timestamp', function(done) {
       oldName = 'test.jpg';
       rename = true;
-      var newName = utils.renameOriginal(oldName, rename, convention,
-          separator);
+      var newName = utils.renameOriginal(
+          oldName, rename, convention, separator);
       newName.should.equal('test_' + getDate() + '.jpg');
       done();
     });
@@ -72,8 +74,8 @@ describe('Utils', function() {
       oldName = '$fUNNY Name.PNG';
       rename = true;
       convention = 'original';
-      var newName = utils.renameOriginal(oldName, rename, convention,
-          separator);
+      var newName = utils.renameOriginal(
+          oldName, rename, convention, separator);
       newName.should.equal('_funny_name.png');
       done();
     });

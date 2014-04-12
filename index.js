@@ -133,9 +133,11 @@ Picsee.prototype.validate = function(image, cb) {
         var mime = result;
 
         var parsedExtension = utils.getExtByMime(mime),
-            correctedTmpName = utils.renameForProcessing(oldName, parsedExtension),
+            correctedTmpName = utils.renameForProcessing(
+                oldName, parsedExtension),
             correctedStagingPath = self._stagingDir + correctedTmpName,
-            correctedProcessPath = self._docRoot + self._processDir + correctedTmpName,
+            correctedProcessPath = self._docRoot + self._processDir +
+            correctedTmpName,
             correctedUrl = self._urlRoot + self._processDir + correctedTmpName;
         fs.unlink(stagingPath, function(err, result) {
           if (err) {
@@ -143,7 +145,8 @@ Picsee.prototype.validate = function(image, cb) {
           }
           fs.writeFile(correctedStagingPath, data, function(err) {
             if (err) {
-              return cb(err + 'Cannot save CORRECTED file: ' + correctedStagingPath, null);
+              return cb(err + 'Cannot save CORRECTED file: ' +
+                  correctedStagingPath, null);
             }
             if (MIMES_ALLOWED.indexOf(mime) !== -1) {
               fs.writeFile(correctedProcessPath, data, function(err) {
@@ -152,20 +155,33 @@ Picsee.prototype.validate = function(image, cb) {
                   return utils.removeImage(correctedStagingPath, msg, cb);
                 }
                 utils.removeImage(correctedStagingPath, null, function() {
-                  var dims = utils.getRealDimensions(correctedProcessPath, mime);
+                  var dims = utils.getRealDimensions(
+                      correctedProcessPath, mime);
                   if (keepOriginal) {
                     self.saveOriginal(oldName, data, function(err, original) {
                       var newName = correctedProcessPath.split('/');
                       newName = newName[newName.length - 1];
                       var relpath = self._relativePath + self._processDir +
                           newName;
-                      return cb(null, { name: correctedTmpName, path: correctedProcessPath, url: correctedUrl,
-                        original: original, w: dims.w, h: dims.h, relpath:
-                            relpath});
+                      return cb(null, {
+                        name: correctedTmpName,
+                        path: correctedProcessPath,
+                        url: correctedUrl,
+                        original: original,
+                        w: dims.w,
+                        h: dims.h,
+                        relpath: relpath
+                      });
                     });
                   } else {
-                    return cb(null, {name: correctedTmpName, path: correctedProcessPath, url: correctedUrl,
-                      original: original, w: dims.w, h: dims.h});
+                    return cb(null, {
+                      name: correctedTmpName,
+                      path: correctedProcessPath,
+                      url: correctedUrl,
+                      original: original,
+                      w: dims.w,
+                      h: dims.h
+                    });
                   }
                 });
               });
@@ -257,8 +273,7 @@ Picsee.prototype.crop = function(req, res, cb) {
         }
         break;
       default:
-        return cb('Could not determine mime type of this file: ' +
-            image, null);
+        return cb('Could not determine mime type of this file: ' + image, null);
     }
   });
 };
@@ -329,7 +344,6 @@ Picsee.prototype.process = function(opts, cb) {
       });
     }
   }
-
   processVersion(versions.shift());
 };
 
@@ -380,7 +394,7 @@ Picsee.prototype.cropGif = function cropGif(image, opts, orig, cb) {
   target.saveGif(image, function(err) {
     if (err) return cb(err, null);
     var opts = {
-      image: { name: path.basename(image) || null },
+      image: {name: path.basename(image) || null},
       orig: orig || null,
       processPath: image || null,
       ext: utils.getFileExt(image) || null
